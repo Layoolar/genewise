@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image
+  Image,
+  StyleSheet
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -65,33 +66,17 @@ export default function Login() {
           keyboardShouldPersistTaps="handled">
           {/* Header with Gradient */}
           <LinearGradient
-           colors={['#A9C9A4', '#1C5403']}
-            className="px-8 pt-16 pb-24 rounded-b-[40px]"
-            style={{
-              height: '30%',
-              paddingTop: 64,
-              paddingBottom: 96,
-              paddingHorizontal: 32,
-              position: 'relative'
-            }}
-          >
-            {/* Logo in the top right */ }
-            <Image 
-              source={require('../../assets/images/onLogo.png')}
-              style={{
-                width: 50,
-                height: 50,
-                position: 'absolute',
-                top: 16,
-                right: 16,
-                resizeMode: 'contain'
-              }}
-            />
-            <Text className="text-white text-[24px] font-bold">
-               Hello
-              </Text>
-            <Text className="text-white text-[24px] font-bold mt-2">Sign in!</Text>
-          </LinearGradient>
+                colors={['#A9C9A4', '#1C5403']}
+                style={styles.gradientContainer}
+              >
+                <Image
+                  source={require('../../assets/images/genewiser1.png')}
+                  style={styles.logo}
+                />
+          
+                <Text style={styles.title}>Hello</Text>
+                <Text style={[styles.title, { marginTop: 8 }]}>Sign In</Text>
+              </LinearGradient>
 
           {/* Form Card - Starts after gradient */}
           <View className="shadow-lg flex-1 px-6 pt-8 -mt-12"
@@ -139,3 +124,28 @@ export default function Login() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  gradientContainer: {
+    height: '30%',
+    paddingTop: Platform.OS === 'android' ? 64 : 80,
+    paddingBottom: 96,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    position: 'relative',
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 48 : 64, // Adjusted upward
+    right: 16,
+    resizeMode: 'contain',
+  },
+  title: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+});
