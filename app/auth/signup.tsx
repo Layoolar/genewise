@@ -153,15 +153,13 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 64 : 80,
     paddingBottom: 96,
     paddingHorizontal: 24,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
     position: 'relative',
   },
   logo: {
     width: 100,
     height: 100,
     position: 'absolute',
-    top: Platform.OS === 'android' ? 48 : 64, // Adjusted upward
+    top: Platform.OS === 'android' ? 48 : 64, 
     right: 16,
     resizeMode: 'contain',
   },
