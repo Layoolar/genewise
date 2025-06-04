@@ -109,10 +109,10 @@ export default function Login() {
             </TouchableOpacity>
 
             {/* Sign In Button */}
-            <PrimaryButton title="Sign In" onPress={handleSignIn} className="mt-3" />
+            <PrimaryButton title="Sign In" onPress={handleSignIn} className="mt-8" />
 
             {/* Bottom Text */}
-            <View className="mt-auto mb-6 flex-row justify-end">
+            <View className="mt-6 mb-6 flex-row justify-center">
               <Text className="text-gray-500">Don't have account? </Text>
               <TouchableOpacity onPress={()  => router.push('/auth/signup')}>
                 <Text className="text-[#1C5403]">Sign Up</Text>

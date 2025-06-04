@@ -130,10 +130,10 @@ const SignUp: React.FC = () => {
               />
 
               {/* Sign Up Button */ }
-              <PrimaryButton title="Sign Up" onPress={handleSignUp} className="mt-3" />
+              <PrimaryButton title="Sign Up" onPress={handleSignUp} className="mt-8" />
 
               {/* Bottom Text */ }
-              <View className="mt-auto mb-6 flex-row justify-end">
+              <View className="mt-6 mb-6 flex-row justify-center">
                   <Text className="text-gray-500">Already have an account?</Text>
                   <TouchableOpacity onPress={() => router.push('/auth/login')}>
                     <Text className="text-[#1C5403]">Sign In</Text>

@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Dropdown } from '../reusables/Dropdown';
 import { FileUpload } from '../reusables/FileUpload';
 import { PrimaryButton } from '../reusables/PrimaryButton';
+import { Ionicons } from '@expo/vector-icons';
 
 
 export default function OnboardingScreen() {
@@ -106,9 +107,9 @@ export default function OnboardingScreen() {
                  <PrimaryButton title="Continue" onPress={handleContinue} className="mt-4" />
 
                  <TouchableOpacity
-                   className="mt-4 mb-6"
+                   className="items-center justify-center mt-4 mb-6 p-3 rounded-full bg-gray-100 self-start "
                    onPress={() => router.back()}>
-                     <Text className="text-[#1C5403]">Back</Text>
+                    <Ionicons name="arrow-back" size={24} color="#1C5403" />
                  </TouchableOpacity>
              </View>
            </ScrollView>
