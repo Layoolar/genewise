@@ -1,174 +1,190 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    SafeAreaView,
-     View,
-     KeyboardAvoidingView,
-     Platform,
-     Text,
-     ScrollView,
-     TouchableOpacity,
-     Image,
-     StyleSheet
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Input } from '../reusables/Input';
 import { PrimaryButton } from '../reusables/PrimaryButton';
 
 const SignUp: React.FC = () => {
-    const router = useRouter();
-    
-    const [fullName, setFullName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+  const router = useRouter();
 
-    const [errors, setErrors] = useState({
-        fullName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-    });
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-    const handleSignUp = () => {
-        let valid = true;
-        const newErrors = {
-          fullName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-        };
+  const [errors, setErrors] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
-        if (!fullName.trim()) {
-            newErrors.fullName = "Full name is required";
-            valid = false;
-        }
+  const handleSignUp = () => {
+    let valid = true;
+    const newErrors = {
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    };
 
-        if (!email.trim()) {
-            newErrors.email = "Email is required";
-            valid = false;
-        } else if (!/\S+@\S+\.\S+/.test(email)) {
-            newErrors.email = "Email is required";
-            valid = false;
-        }
-
-        if (!password) {
-            newErrors.password = "Password is required";
-            valid = false;
-        }
-
-        if (password !== confirmPassword) {
-            newErrors.confirmPassword = "Password do not match";
-            valid = false;
-        }
-
-        setErrors(newErrors);
-
-        if (valid) {
-         router.push('/auth/verify')
-        }
+    if (!fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+      valid = false;
     }
-    return (
-     <SafeAreaView className="flex-1 bg-white">
-        <KeyboardAvoidingView
-           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-           className="flex-1"
-         >
-     <ScrollView 
-          contentContainerStyle={{ flexGrow: 1 }} 
-           keyboardShouldPersistTaps="handled">
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+      valid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Enter a valid email address';
+      valid = false;
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+      valid = false;
+    }
+
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+      valid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (valid) {
+      router.push('/auth/verify');
+    }
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
           <LinearGradient
-            colors={['#A9C9A4', '#1C5403']}
-           style={styles.gradientContainer}>
-          <Image
-            source={require('../../assets/images/genewiser1.png')}
-           style={styles.logo}
-          />
-
-      <Text style={styles.title}>Hello</Text>
-      <Text style={[styles.title, { marginTop: 8 }]}>Sign Up</Text>
-         </LinearGradient>
-
-        {/* Form Card - Starts after gradient */ }
-        <View
-          className="shadow-lg flex-1 px-6 pt-8 -mt-12"
-          style={{
-            borderTopLeftRadius: 40,
-            borderTopRightRadius: 40,
-            backgroundColor: 'white',
-          }}>
-           <Input
-             label="Full Name"
-             placeholder="Joy Doe"
-             value={fullName}
-             onChangeText={setFullName}
-             error={errors.fullName}
+            colors={['#1C5403', '#020d00']}
+            style={styles.gradientContainer}
+          >
+            <Image
+              source={require('../../assets/images/genewiser1.png')}
+              style={styles.logo}
             />
-            <Input 
+            <Text style={styles.heading}>Welcome 👋</Text>
+            <Text style={styles.greeting}>Create Your Account</Text>
+          </LinearGradient>
+
+          <View style={styles.formContainer}>
+            <Input
+              label="Full Name"
+              placeholder="Joy Doe"
+              value={fullName}
+              onChangeText={setFullName}
+              error={errors.fullName}
+            />
+            <Input
               label="Email"
-              placeholder="Joydeo@gmail.com"
+              placeholder="joydoe@example.com"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               error={errors.email}
             />
-            <Input 
+            <Input
               label="Password"
               placeholder="••••••••"
-               value={password}
-               onChangeText={setPassword}
-               secureTextEntry
-               error={errors.password}
-              />
-              <Input 
-                 label="Password Confirm"
-                 placeholder="••••••••"
-                 value={confirmPassword}
-                 onChangeText={setConfirmPassword}
-                 secureTextEntry
-                 error={errors.confirmPassword}
-              />
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              error={errors.password}
+            />
+            <Input
+              label="Confirm Password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              error={errors.confirmPassword}
+            />
 
-              {/* Sign Up Button */ }
-              <PrimaryButton title="Sign Up" onPress={handleSignUp} className="mt-8" />
+            <PrimaryButton title="Sign Up" onPress={handleSignUp} style={{ marginTop: 24 }} />
 
-              {/* Bottom Text */ }
-              <View className="mt-6 mb-6 flex-row justify-center">
-                  <Text className="text-gray-500">Already have an account?</Text>
-                  <TouchableOpacity onPress={() => router.push('/auth/login')}>
-                    <Text className="text-[#1C5403]">Sign In</Text>
-                  </TouchableOpacity>
-              </View>
-        </View>
-       </ScrollView>
-     </KeyboardAvoidingView>
-     </SafeAreaView>
-    );
-}
-
+            <View style={styles.bottomText}>
+              <Text style={{ color: '#6b7280' }}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/auth/login')}>
+                <Text style={{ color: '#1C5403', fontWeight: '600' }}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   gradientContainer: {
-    height: '30%',
-    paddingTop: Platform.OS === 'android' ? 64 : 80,
-    paddingBottom: 96,
+    height: '32%',
+    paddingTop: Platform.OS === 'android' ? 60 : 80,
     paddingHorizontal: 24,
-    position: 'relative',
+    paddingBottom: 40,
+    justifyContent: 'center'
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     position: 'absolute',
-    top: Platform.OS === 'android' ? 48 : 64, 
-    right: 16,
+    top: Platform.OS === 'android' ? 48 : 64,
+    right: 24,
     resizeMode: 'contain',
   },
-  title: {
-    color: 'white',
-    fontSize: 24,
+  greeting: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '400',
+    marginBottom: 4,
+  },
+  heading: {
+    color: '#fff',
+    fontSize: 28,
     fontWeight: 'bold',
   },
+  formContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 48,
+    backgroundColor: '#fff',
+    marginTop: -24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  bottomText: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 24,
+  },
 });
-
 
 export default SignUp;

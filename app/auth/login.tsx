@@ -1,21 +1,19 @@
-// app/login/Login.tsx
-
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
   ScrollView,
-  Image,
-  StyleSheet
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { PrimaryButton } from '../reusables/PrimaryButton';
 import { Input } from '../reusables/Input';
+import { PrimaryButton } from '../reusables/PrimaryButton';
 
 export default function Login() {
   const router = useRouter();
@@ -29,92 +27,88 @@ export default function Login() {
   const handleSignIn = () => {
     let valid = true;
 
-    const newErrors = {
-      email: '',
-      password: ''
-    };
+    const newErrors = { email: '', password: '' };
 
     if (!email.trim()) {
-        newErrors.email = "Email is required";
-        valid = false;
+      newErrors.email = "Email is required";
+      valid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-       newErrors.email = "Email is required";
-       valid = false;
+      newErrors.email = "Email is invalid";
+      valid = false;
     }
 
     if (!password) {
-        newErrors.password = "Password is required";
-        valid = false;
+      newErrors.password = "Password is required";
+      valid = false;
     }
 
     setErrors(newErrors);
 
     if (valid) {
-    // router.push('/auth/onboarding');
+      // router.push('/auth/onboarding');
     }
   }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Wrap in KeyboardAvoidingView for better keyboard handling */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
         <ScrollView 
           contentContainerStyle={{ flexGrow: 1 }} 
-          keyboardShouldPersistTaps="handled">
-          {/* Header with Gradient */}
+          keyboardShouldPersistTaps="handled"
+        >
           <LinearGradient
-                colors={['#A9C9A4', '#1C5403']}
-                style={styles.gradientContainer}
-              >
-                <Image
-                  source={require('../../assets/images/genewiser1.png')}
-                  style={styles.logo}
-                />
-          
-                <Text style={styles.title}>Hello</Text>
-                <Text style={[styles.title, { marginTop: 8 }]}>Sign In</Text>
-              </LinearGradient>
+            colors={['#1C5403', '#020d00']}
+            style={styles.gradientContainer}
+          >
+            <Image
+              source={require('../../assets/images/genewiser1.png')}
+              style={styles.logo}
+            />
 
-          {/* Form Card - Starts after gradient */}
-          <View className="shadow-lg flex-1 px-6 pt-8 -mt-12"
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.welcomeText}>Welcome Back 👋</Text>
+              <Text style={styles.signinText}>Sign In</Text>
+            </View>
+          </LinearGradient>
+
+          <View
+            className="shadow-lg flex-1 px-6 pt-8 -mt-12"
             style={{
               borderTopLeftRadius: 40,
-            borderTopRightRadius: 40,
-            backgroundColor: 'white',
-            }}>
-               <Input 
-                  label="Email"
-                  placeholder="Joydeo@gmail.com"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  error={errors.email}
-               />
+              borderTopRightRadius: 40,
+              backgroundColor: 'white',
+            }}
+          >
+            <Input 
+              label="Email"
+              placeholder="joydeo@gmail.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              error={errors.email}
+            />
 
-               <Input 
-                 label="Password"
-                 placeholder="••••••••"
-                 value={password}
-                 onChangeText={setPassword}
-                 secureTextEntry
-                 error={errors.password}
-               />
+            <Input 
+              label="Password"
+              placeholder="••••••••"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              error={errors.password}
+            />
 
-            {/* Forgot Password */}
             <TouchableOpacity className="self-end mt-3">
               <Text className="text-gray-700">Forgot password?</Text>
             </TouchableOpacity>
 
-            {/* Sign In Button */}
             <PrimaryButton title="Sign In" onPress={handleSignIn} className="mt-8" />
 
-            {/* Bottom Text */}
             <View className="mt-6 mb-6 flex-row justify-center">
-              <Text className="text-gray-500">Don't have account? </Text>
-              <TouchableOpacity onPress={()  => router.push('/auth/signup')}>
+              <Text className="text-gray-500">Don't have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/auth/signup')}>
                 <Text className="text-[#1C5403]">Sign Up</Text>
               </TouchableOpacity>
             </View>
@@ -137,13 +131,21 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     position: 'absolute',
-    top: Platform.OS === 'android' ? 48 : 64, 
+    top: Platform.OS === 'android' ? 48 : 64,
     right: 16,
     resizeMode: 'contain',
   },
-  title: {
+  headerTextContainer: {
+    marginTop: 32,
+  },
+  welcomeText: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
+  },
+  signinText: {
+    color: 'white',
+    fontSize: 22,
+    marginTop: 4,
   },
 });

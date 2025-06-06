@@ -1,93 +1,92 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    SafeAreaView, 
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    View, 
-    Text,
-    TouchableOpacity,
-    Image,
-    StyleSheet
- } from 'react-native';
- import { useRouter } from 'expo-router';
- import { LinearGradient } from 'expo-linear-gradient';
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { Label } from '../reusables/Label';
 import { OtpInput } from '../reusables/OtpInput';
 import { PrimaryButton } from '../reusables/PrimaryButton';
 
 const VerifyScreen: React.FC = () => {
-    const router = useRouter();
-    const [otp, setOtp] = useState('');
-    const [error, setError] = useState('');
+  const router = useRouter();
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
 
-    const handleVerify = (code: string) => {
-        setOtp(code);
-        console.log('Verification code:', code);
-        router.push('/onboarding/onboarding');
+  const handleVerify = () => {
+    if (otp.length !== 6) {
+      setError("Please enter the full 6-digit code");
+      return;
     }
-    
-    // setTimeout(() => {
-       
-    // });
-    
+
+    console.log('Verification code:', otp);
+    router.push('/onboarding/onboarding');
+  };
+
   return (
-   <SafeAreaView className="flex-1 bg-white">
-     <KeyboardAvoidingView
-       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-       className="flex-1">
-       <ScrollView
+    <SafeAreaView className="flex-1 bg-white">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1"
+      >
+        <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled">
-           <LinearGradient
-                     colors={['#A9C9A4', '#1C5403']}
-                    style={styles.gradientContainer}>
-                   <Image
-                     source={require('../../assets/images/genewiser1.png')}
-                    style={styles.logo}
-                   />
-         
-               <Text style={styles.title}>Verify Email</Text>
-               <Text style={[styles.title, { marginTop: 8 }]}>Enter Code</Text>
-             </LinearGradient>
+          keyboardShouldPersistTaps="handled"
+        >
+          <LinearGradient
+            colors={['#1C5403', '#020d00']}
+            style={styles.gradientContainer}
+          >
+            <Image
+              source={require('../../assets/images/genewiser1.png')}
+              style={styles.logo}
+            />
 
-         {/* Form Card - Start after Gradient */ }
-        <View className="shadow-lg flex-1 px-6 pt-8 -mt-12"
-           style={{
-             borderTopLeftRadius: 40,
-            borderTopRightRadius: 40,
-            backgroundColor: 'white',
-           }}>
-           <Label text="Verification Code" className="text-center text-[20px] font-bold mb-4"  />
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.welcomeText}>Verify Email 👋</Text>
+              <Text style={styles.subText}>Enter Code</Text>
+            </View>
+          </LinearGradient>
 
-           <Text className="text-center text-[16px] text-gray-500 font-bold mb-6">
-             Enter the 6-digit code sent to your email.
-           </Text>
+          <View
+            className="shadow-lg flex-1 px-6 pt-8 -mt-12"
+            style={{
+              borderTopLeftRadius: 40,
+              borderTopRightRadius: 40,
+              backgroundColor: 'white',
+            }}
+          >
+            <Label text="Verification Code" className="text-center text-[20px] font-bold mb-4" />
 
-           {/* OTP Input */ }
-           <OtpInput numberOfDigits={6} onCodeFilled={handleVerify} error={error} />
+            <Text className="text-center text-[16px] text-gray-500 font-bold mb-6">
+              Enter the 6-digit code sent to your email.
+            </Text>
 
-           {/* Submit Button */ }
-           <PrimaryButton 
+            <OtpInput numberOfDigits={6} onCodeFilled={setOtp} error={error} />
+
+            <PrimaryButton 
               title="Verify"
-              onPress={() => handleVerify}
-              // onPress={() => {
-              //   if (otp.length !== 6) {
-              //      setError("Please enter the full 6-digit code");
-              //   }
-              // }}
-              className={`${otp.length !== 6 ? 'opacity-60' : ''}`}
-           /> 
+              onPress={handleVerify}
+              className={`${otp.length !== 6 ? 'opacity-60' : ''} mt-6`}
+            />
 
-           <TouchableOpacity className="mt-4" onPress={() => alert('Resend code')}>
+            <TouchableOpacity className="mt-4" onPress={() => alert('Resend code')}>
               <Text className="text-[#1C5403] text-center">Resend Code</Text>
-           </TouchableOpacity>
-        </View>
-       </ScrollView>
-     </KeyboardAvoidingView>
-   </SafeAreaView>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   gradientContainer: {
@@ -101,14 +100,22 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     position: 'absolute',
-    top: Platform.OS === 'android' ? 48 : 64, 
+    top: Platform.OS === 'android' ? 48 : 64,
     right: 16,
     resizeMode: 'contain',
   },
-  title: {
+  headerTextContainer: {
+    marginTop: 32,
+  },
+  welcomeText: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
+  },
+  subText: {
+    color: 'white',
+    fontSize: 22,
+    marginTop: 4,
   },
 });
 
