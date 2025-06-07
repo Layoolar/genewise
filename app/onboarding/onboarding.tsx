@@ -54,7 +54,7 @@ export default function OnboardingScreen() {
         setErrors(newErrors);
 
         if (valid) {
-            //router.push('/auth/dashboard');
+          router.push('/chat/chat');
         }
     }
     return (
