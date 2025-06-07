@@ -1,6 +1,6 @@
-import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 interface ButtonProps {
   title: string;
@@ -35,7 +35,7 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
         className="items-center justify-center rounded-xl"
       >
         <LinearGradient
-          colors={['#A9C9A4', '#1C5403']}
+          colors={['#1C5403', '#020d00']}
           style={{
             flex: 1,
             width: '100%',
