@@ -53,7 +53,7 @@ export default function Login() {
     <SafeAreaView className="flex-1 bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView 
           contentContainerStyle={{ flexGrow: 1 }} 
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   headerTextContainer: {
-    marginTop: 32,
+    marginTop: Platform.select({ android: 32, ios: 0 }),
   },
   welcomeText: {
     color: 'white',

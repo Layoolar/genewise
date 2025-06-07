@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   headerTextContainer: {
-    marginTop: 32,
+    marginTop: Platform.select({ android: 32, ios: 0 }),
   },
   welcomeText: {
     color: 'white',

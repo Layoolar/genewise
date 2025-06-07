@@ -53,7 +53,7 @@ export default function OnboardingScreen() {
 
     if (valid) {
       console.log('Proceeding with:', { bloodGroup, genotype, dnaFile });
-      // router.push('/auth/dashboard');
+      router.push('/chat/chat');
     }
   };
 
@@ -103,7 +103,6 @@ export default function OnboardingScreen() {
               selectedValue={genotype}
               onValueChange={setGenotype}
               error={errors.genotype}
-              className="mt-4"
             />
 
             <FileUpload label="DNA (Optional)" onFileSelected={setDnaFile} className="mt-4" />
@@ -145,7 +144,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerTextContainer: {
-    marginTop: 32,
+     marginTop: Platform.select({ android: 32, ios: 0 }),
   },
   onboardingText: {
     color: 'white',
