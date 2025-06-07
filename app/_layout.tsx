@@ -13,6 +13,22 @@ const RootLayout = () => {
         name="auth/signup"
         options={{ headerShown: false }}
         />
+        <Stack.Screen 
+          name="auth/login"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="auth/verify"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+           name="onboarding/onboarding"
+           options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="chat/chat"
+          options={{ headerShown: false }}
+        />
     </Stack>
   );
 };
