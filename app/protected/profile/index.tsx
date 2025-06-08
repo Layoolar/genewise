@@ -13,12 +13,13 @@ import { useRouter } from 'expo-router';
 import { Input } from '../../reusables/Input';
 import { Dropdown } from '../../reusables/Dropdown';
 import { PrimaryButton } from '../../reusables/PrimaryButton';
+import { MultiSelectDropdown } from '@/app/reusables/MultiSelectDropdown';
 import { useState } from 'react';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const genotypes = ['AA', 'AS', 'SS', 'AC', 'SC'];
 const activityLevels = ['Sedentary', 'Moderate', 'Active'];
-const foodPreferences = ['Vegetarian', 'Vegan', 'Lactose-Free', 'Halal', 'Kosher'];
+const foodPreferencesOptions = ['Vegetarian', 'Vegan', 'Lactose-Free', 'Halal', 'Kosher'];
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function ProfileScreen() {
   const [knownConditions, setKnownConditions] = useState('');
   const [allergies, setAllergies] = useState('');
   const [familyHistory, setFamilyHistory] = useState('');
-  const [foodPreference, setFoodPreference] = useState('');
+  const [foodPreferences, setFoodPreferences] = useState<string[]>([]);
 
   const [errors, setErrors] = useState({
     fullName: '',
@@ -101,7 +102,7 @@ export default function ProfileScreen() {
         knownConditions,
         allergies,
         familyHistory,
-        foodPreference,
+        foodPreferences,
       });
       // router.push('/dashboard');
     }
@@ -195,11 +196,11 @@ export default function ProfileScreen() {
             <Input label="Known Conditions" placeholder="e.g., Asthma, Diabetes" value={knownConditions} onChangeText={setKnownConditions} />
             <Input label="Allergies" placeholder="e.g., Peanuts, Dust" value={allergies} onChangeText={setAllergies} />
             <Input label="Family History" placeholder="e.g., Hypertension" value={familyHistory} onChangeText={setFamilyHistory} />
-            <Dropdown
+            <MultiSelectDropdown
               label="Food Preferences"
-              options={foodPreferences}
-              selectedValue={foodPreference}
-              onValueChange={setFoodPreference}
+              options={foodPreferencesOptions}
+              selectedValues={foodPreferences}
+              onValuesChange={setFoodPreferences}
             />
 
             {/* Submit Button */}

@@ -1,5 +1,3 @@
-// app/protected/_layout.tsx
-
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments, Slot, Stack } from 'expo-router'; // <-- Use Slot instead of Outlet
@@ -11,12 +9,17 @@ export default function ProtectedLayout() {
 
   const navItems = [
     {
-      label: 'Dashboard',
+      label: 'Foods',
       icon: <Ionicons name="heart" size={24} color="#1C5403" />,
-      route: '/protected/dashboard',
+      route: '/protected/foods',
+    },
+     {
+      label: 'Timetable',
+      icon: <Ionicons name="time" size={24} color="#1C5403" />,
+      route: '/protected/timetable',
     },
     {
-      label: 'Chat',
+      label: 'AI chat',
       icon: <Ionicons name="chatbubbles" size={24} color="#1C5403" />,
       route: '/protected/chat',
     },
@@ -24,11 +27,6 @@ export default function ProtectedLayout() {
       label: 'Profile',
       icon: <Ionicons name="person" size={24} color="#1C5403" />,
       route: '/protected/profile',
-    },
-    {
-      label: 'History',
-      icon: <Ionicons name="time" size={24} color="#1C5403" />,
-      route: '/protected/history',
     },
   ];
 

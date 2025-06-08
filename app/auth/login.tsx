@@ -45,7 +45,7 @@ export default function Login() {
     setErrors(newErrors);
 
     if (valid) {
-       router.push('/protected/dashboard');
+       router.push('/protected/foods');
     }
   }
 

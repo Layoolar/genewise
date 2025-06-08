@@ -26,7 +26,7 @@ const RootLayout = () => {
            options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="protected/dashboard"
+          name="protected/foods"
           options={{ headerShown: false }}
         />
     </Stack>
