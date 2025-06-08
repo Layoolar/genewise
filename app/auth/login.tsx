@@ -45,7 +45,7 @@ export default function Login() {
     setErrors(newErrors);
 
     if (valid) {
-       router.push('/profile/profile');
+       router.push('/protected/profile/profile');
     }
   }
 

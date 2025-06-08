@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Input } from '../reusables/Input';
-import { Dropdown } from '../reusables/Dropdown';
-import { PrimaryButton } from '../reusables/PrimaryButton';
+import { Input } from '../../reusables/Input';
+import { Dropdown } from '../../reusables/Dropdown';
+import { PrimaryButton } from '../../reusables/PrimaryButton';
 import { useState } from 'react';
 
 const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -123,7 +123,7 @@ export default function ProfileScreen() {
             style={styles.gradientContainer}
           >
             <Image
-              source={require('../../assets/images/genewiser1.png')}
+              source={require('../../../assets/images/genewiser1.png')}
               style={styles.logo}
             />
 
