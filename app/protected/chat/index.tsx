@@ -9,13 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  Text,
-  ScrollView,
+  Text
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
 
-import { ChatMessage } from '../reusables/ChatMessage';
+import { ChatMessage } from '../../reusables/ChatMessage';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ChatMessage {
@@ -79,7 +78,7 @@ export default function ChatScreen() {
        <Ionicons name="arrow-back" size={24} color="white" />
      </TouchableOpacity>
     <Image
-       source={require('../../assets/images/genewiser1.png')}
+       source={require('../../../assets/images/genewiser1.png')}
        className="w-10 h-10 rounded-full"
        resizeMode="contain"
      />

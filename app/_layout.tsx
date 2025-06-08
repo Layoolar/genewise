@@ -25,10 +25,6 @@ const RootLayout = () => {
            name="onboarding/onboarding"
            options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="chat/chat"
-          options={{ headerShown: false }}
-        />
     </Stack>
   );
 };

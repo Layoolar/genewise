@@ -53,7 +53,7 @@ export default function OnboardingScreen() {
 
     if (valid) {
       console.log('Proceeding with:', { bloodGroup, genotype, dnaFile });
-      router.push('/chat/chat');
+      router.push('/protected/chat/chat');
     }
   };
 
