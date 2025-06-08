@@ -25,8 +25,8 @@ const RootLayout = () => {
            name="onboarding/onboarding"
            options={{ headerShown: false }}
         />
-        <Stack.Screen 
-          name="chat/chat"
+        <Stack.Screen
+          name="protected/dashboard"
           options={{ headerShown: false }}
         />
     </Stack>
