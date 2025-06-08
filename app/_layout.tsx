@@ -29,6 +29,10 @@ const RootLayout = () => {
           name="chat/chat"
           options={{ headerShown: false }}
         />
+        <Stack.Screen 
+           name="profile/profile"
+           options={{ headerShown: false }}
+        />
     </Stack>
   );
 };
