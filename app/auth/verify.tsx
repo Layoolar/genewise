@@ -15,20 +15,53 @@ import {
 import { Label } from '../reusables/Label';
 import { OtpInput } from '../reusables/OtpInput';
 import { PrimaryButton } from '../reusables/PrimaryButton';
+import {  Formik } from 'formik';
+import apiClient from '../utils/apiClient';
+import { otpSchema } from '../utils/validation';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
+import { useAuth } from '../hooks/useAuth';
+import { VerifyFormValues } from '../types/auth.d';
+import { verifyInitialValues } from '../types/formHelpers';
+
 
 const VerifyScreen: React.FC = () => {
   const router = useRouter();
-  const [otp, setOtp] = useState('');
-  const [error, setError] = useState('');
+  const { email } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-  const handleVerify = () => {
-    if (otp.length !== 6) {
-      setError("Please enter the full 6-digit code");
-      return;
-    }
+  const handleVerify = async (values: VerifyFormValues) => {
+       if (!email) {
+        showErrorToast('Email not found. Please sign up again.');
+        return;
+       }
 
-    console.log('Verification code:', otp);
-    router.push('/onboarding/onboarding');
+       setLoading(true);
+
+       try {
+         const response = await apiClient.post('/auth/verify-email', {
+            email,
+            otp: values.otp
+         });
+
+         if (response.status === 200) {
+          showSuccessToast('Verificatuion successful 🎉');
+          router.push('/auth/login');
+         }
+       } catch (error: any) {
+          const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'An unknown error occurred';
+
+      console.error('Error verifying OTP:', {
+        message: error.message,
+        response: error.response?.data,
+        stack: error.stack,
+      });
+       showErrorToast(errorMessage);
+      } finally {
+        setLoading(false);
+      }
   };
 
   return (
@@ -70,13 +103,37 @@ const VerifyScreen: React.FC = () => {
               Enter the 6-digit code sent to your email.
             </Text>
 
-            <OtpInput numberOfDigits={6} onCodeFilled={setOtp} error={error} />
+            <Formik
+              initialValues={verifyInitialValues}
+              validationSchema={otpSchema}
+              onSubmit={handleVerify}
+            >
+              {({ handleChange,  handleSubmit, values, errors, touched }) => (
+                <>
+                 <OtpInput 
+                   numberOfDigits={6} 
+                   onCodeFilled={handleChange('otp')}
+                    error={errors.otp}
+                    touched={touched.otp} 
+                    />
 
-            <PrimaryButton 
-              title="Verify"
-              onPress={handleVerify}
-              className={`${otp.length !== 6 ? 'opacity-60' : ''} mt-6`}
-            />
+                    {touched.otp && errors.otp && (
+                      <Text style={{ color: 'red', textAlign: 'center', marginTop: 10 }}>
+                      {errors.otp}
+                     </Text> 
+                    )}
+
+                 <PrimaryButton 
+                   title="Verify"
+                   onPress={async () => {
+                    await handleVerify(values);
+                   }}
+                   className="opacity-60 mt-6" 
+                   loading={loading}
+                   />
+                </>
+                )}
+             </Formik>
 
             <TouchableOpacity className="mt-4" onPress={() => alert('Resend code')}>
               <Text className="text-[#1C5403] text-center">Resend Code</Text>

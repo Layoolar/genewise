@@ -5,12 +5,14 @@ interface OtpInputProps {
     numberOfDigits?: number;
     onCodeFilled: (code: string) => void;
     error?: string;
+    touched?: boolean;
 }
 
 export const OtpInput: React.FC<OtpInputProps> = ({
     numberOfDigits = 6,
     onCodeFilled,
-    error
+    error,
+    touched = false
 }) => {
    const [code, setCode] = useState<string[]>(Array(numberOfDigits).fill(''));
    const inputsRef = useRef<TextInput[]>([]);
@@ -55,7 +57,9 @@ export const OtpInput: React.FC<OtpInputProps> = ({
             maxLength={1}
           />
         ))}
-        {error && <Text className="text-red-500 text-sm">{error}</Text>}
+        {touched && error && (
+           <Text className="text-red-500 text-sm">{error}</Text>
+        )}
       </View>
     </View>
    )
