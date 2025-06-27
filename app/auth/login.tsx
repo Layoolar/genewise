@@ -13,41 +13,86 @@ import {
   View
 } from 'react-native';
 import { Input } from '../reusables/Input';
+import { Formik } from 'formik';
 import { PrimaryButton } from '../reusables/PrimaryButton';
+import apiClient from '../utils/apiClient';
+import { showErrorToast, showSuccessToast } from '../utils/toast';
+import { useAuth } from '../hooks/useAuth';
+import { loginSchema } from '../utils/validation';
+import { LoginFormValues } from '../types/auth.d';
+import { loginInitialValues } from '../types/formHelpers';
+
+// interface LoginFormValues {
+//   email: string;
+//   password: string;
+// }
+
+// const initialValues: LoginFormValues = {
+//   email: '',
+//   password: '',
+// };
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({
-    email: '',
-    password: '',
-  });
+  const {signIn} = useAuth();
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSignIn = () => {
-    let valid = true;
 
-    const newErrors = { email: '', password: '' };
+ const handleSignIn = async (values: LoginFormValues) => {
+  setLoading(true);
 
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-      valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email is invalid";
-      valid = false;
+  try {
+    const response = await apiClient.post('/auth/login', {
+      email: values.email,
+      password: values.password
+    });
+
+    const apiResponse = response.data;
+    const token = apiResponse.data?.access_token;
+
+    if (!token) {
+      throw new Error('No token returned from server');
     }
 
-    if (!password) {
-      newErrors.password = "Password is required";
-      valid = false;
+    const user = apiResponse.data.user;
+
+    const userData = {
+      id: user.id,
+      email: user.email,
+      firstName: user.FirstName,
+      lastName: user.last_name,
+      is_verified: user.is_verified,
+    };
+
+    // Checking if user is verified
+    if (!userData.is_verified) {
+      showErrorToast('Please verify your email before loggin in');
+      router.push('/auth/verify');
+      return;
     }
 
-    setErrors(newErrors);
+    await signIn(token, userData);
+    showSuccessToast("Login successful 🎉");
+    router.push('/protected/foods');
 
-    if (valid) {
-       router.push('/protected/foods');
-    }
+  } catch (error: any) {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      'An unknown error occurred';
+
+    console.error('Error during login:', {
+      message: error.message,
+      status: error.response?.status,
+      responseData: error.response?.data,
+      stack: error.stack
+    });
+
+    showErrorToast(errorMessage);
+  } finally {
+    setLoading(false);
   }
+};
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -82,29 +127,48 @@ export default function Login() {
               backgroundColor: 'white',
             }}
           >
-            <Input 
+            <Formik
+               initialValues={loginInitialValues}
+              validationSchema={loginSchema}
+              onSubmit={handleSignIn}
+            >
+              {({ handleChange, handleBlur, handleSubmit, values, errors, touched}) => (
+                <>
+              <Input 
               label="Email"
               placeholder="joydeo@gmail.com"
-              value={email}
-              onChangeText={setEmail}
+              value={values.email}
+              onChangeText={(text) => {
+                handleChange('email')(text);
+              }}
+              onBlur={() => {
+                handleBlur('email');
+              }}
               keyboardType="email-address"
               error={errors.email}
+              touched={touched.email}
             />
 
             <Input 
               label="Password"
               placeholder="••••••••"
-              value={password}
-              onChangeText={setPassword}
+              value={values.password}
+              onChangeText={handleChange('password')}
+              onBlur={() => handleBlur('password')}
               secureTextEntry
               error={errors.password}
+              touched={touched.password}
             />
 
             <TouchableOpacity className="self-end mt-3">
               <Text className="text-gray-700">Forgot password?</Text>
             </TouchableOpacity>
 
-            <PrimaryButton title="Sign In" onPress={handleSignIn} className="mt-8" />
+            <PrimaryButton 
+              title="Sign In" 
+              onPress={handleSubmit} 
+              loading={loading}
+              className="mt-8" />
 
             <View className="mt-6 mb-6 flex-row justify-center">
               <Text className="text-gray-500">Don't have an account? </Text>
@@ -112,6 +176,9 @@ export default function Login() {
                 <Text className="text-[#1C5403]">Sign Up</Text>
               </TouchableOpacity>
             </View>
+                </>
+              )}
+           </Formik>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

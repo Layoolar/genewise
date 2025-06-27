@@ -2,10 +2,29 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments, Slot, Stack } from 'expo-router'; // <-- Use Slot instead of Outlet
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../hooks/useAuth';
 
 export default function ProtectedLayout() {
   const router = useRouter();
   const segments = useSegments();
+  const {token, user, isLoading} = useAuth();
+
+  // Show nothing while loading auth state 
+  if (isLoading) {
+    return <Text>Loading...</Text>
+  }
+
+  // If not token, redirect to login
+  if (!token || !user) {
+    router.replace('/auth/login');
+    return null;
+  }
+
+  // If user exists but not veirfied, redirect to verify screen 
+  if (!user.is_verified) {
+    router.replace('/auth/verify');
+    return null;
+  }
 
   const navItems = [
     {

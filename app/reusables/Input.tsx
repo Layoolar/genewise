@@ -14,6 +14,8 @@ interface InputProps {
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
   error?: string;
+  onBlur?: () => void;
+  touched?: boolean;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -24,6 +26,8 @@ export const Input: React.FC<InputProps> = ({
   secureTextEntry = false,
   keyboardType = 'default',
   error,
+  onBlur,
+  touched = false
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -43,6 +47,7 @@ export const Input: React.FC<InputProps> = ({
           autoCapitalize="none"
           keyboardType={keyboardType}
           secureTextEntry={secureTextEntry && !isPasswordVisible}
+          onBlur={onBlur}
         />
 
         {/* Eye Icon for Password Toggle */}
@@ -63,7 +68,9 @@ export const Input: React.FC<InputProps> = ({
       </View>
 
       {/* Error Message */}
-      {error ? <Text className="text-red-500 text-xs mt-1">{error}</Text> : null}
+      {touched && error && (
+        <Text className="text-red-500 text-xs mt-1">{error}</Text>
+      )}
     </View>
   );
 };
