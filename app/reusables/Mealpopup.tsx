@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
+  ActivityIndicator, 
 } from 'react-native';
 
 interface MealPopupProps {
@@ -12,6 +13,8 @@ interface MealPopupProps {
   onClose: () => void;
   mealItems: string[];
   title: string;
+  onRegenerate: () => void; 
+  isRegenerating: boolean;  
 }
 
 export const MealPopup: React.FC<MealPopupProps> = ({
@@ -19,6 +22,8 @@ export const MealPopup: React.FC<MealPopupProps> = ({
   onClose,
   mealItems,
   title,
+  onRegenerate, 
+  isRegenerating,
 }) => {
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -31,11 +36,23 @@ export const MealPopup: React.FC<MealPopupProps> = ({
                 <Text>{item}</Text>
               </View>
             ))}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Close</Text>
+          </View> 
+          <TouchableOpacity
+            style={[styles.button, styles.buttonRegenerate]}
+            onPress={onRegenerate}
+            disabled={isRegenerating} 
+          >
+            {isRegenerating ? (
+              <ActivityIndicator color="#fff" /> 
+            ) : (
+              <Text style={styles.buttonText}>Regenerate This Meal</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.button, styles.closeButton]} onPress={onClose}>
+            <Text style={styles.buttonText}>Close</Text>
           </TouchableOpacity>
         </View>
-      </View>
       </View>
     </Modal>
   );
@@ -52,29 +69,39 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
+    alignItems: 'center', 
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
     textAlign: 'center',
+    color: '#333', 
   },
   mealList: {
     gap: 8,
+    width: '100%',
   },
   mealItem: {
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    alignItems: 'center',
   },
-  closeButton: {
+  button: {
     marginTop: 16,
-    backgroundColor: '#1C5403',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
+    width: '100%', 
   },
-  closeButtonText: {
+  buttonRegenerate: {
+    backgroundColor: '#1C5403',
+  },
+  closeButton: {
+    backgroundColor: '#f44336', 
+  },
+  buttonText: {
     color: 'white',
     fontWeight: 'bold',
   },
