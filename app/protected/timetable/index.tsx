@@ -1,8 +1,8 @@
 import { MealPopup } from '@/app/reusables/Mealpopup';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
-  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,41 +11,246 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import apiClient from '@/app/utils/apiClient';
+import { showSuccessToast, showErrorToast } from '@/app/utils/toast';
+import { AuthContext } from '@/app/context/AuthContext';
 
-const mockMealPlan = {
-  Monday: ['Fried Rice', 'Moin Moin', 'Goat Meat'],
-  Tuesday: ['Yam & Egg Sauce', 'Vegetable Soup', 'Jollof Rice'],
-  Wednesday: ['Oatmeal', 'Plantain & Fish', 'Egusi Soup'],
-  Thursday: ['Pap & Okra', 'Bread & Tea', 'Amala & Ewedu'],
-  Friday: ['Semovita & Banga Soup', 'Rice & Stew', 'Noodles & Chicken'],
-  Saturday: ['Breakfast Porridge', 'Spaghetti', 'Grilled Turkey'],
-  Sunday: ['Corn Flakes', 'Indomie', 'Beef & Pepper Soup'],
-};
 
-const days = Object.keys(mockMealPlan);
+interface FoodItemResponse {
+  id: string;
+  user_id: string;
+  name: string;
+  origin: string;
+  day_of_week: string;
+  meal: 'Breakfast' | 'Lunch' | 'Dinner';
+}
+
+interface MealPlanDisplay {
+  [day: string]: (FoodItemResponse | null)[];
+}
+
 
 export default function Timetable() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useContext(AuthContext); 
+
   const [country, setCountry] = useState('');
   const [tribe, setTribe] = useState('');
-  const [generated, setGenerated] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState<{ title: string; items: string[] } | null>(null);
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedMealPlan, setGeneratedMealPlan] = useState<MealPlanDisplay | null>(null);
+  const [selectedMeal, setSelectedMeal] = useState<{ title: string; mealItem: FoodItemResponse } | null>(null);
+  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false); // Tracks if initial load of existing plan was attempted
 
-  const handleGenerate = () => {
-    if (!country.trim()) {
-      Alert.alert('Error', 'Please enter your country');
+
+  // Helper function to process the raw array of FoodItemResponse into the display format
+  const processFoodItemsToMealPlan = (foodItems: FoodItemResponse[]): MealPlanDisplay => {
+    const plan: MealPlanDisplay = {
+      Monday: [null, null, null], Tuesday: [null, null, null], Wednesday: [null, null, null],
+      Thursday: [null, null, null], Friday: [null, null, null], Saturday: [null, null, null],
+      Sunday: [null, null, null]
+    };
+
+    foodItems.forEach(item => {
+      const day = typeof item.day_of_week === 'string' 
+                  ? item.day_of_week.charAt(0).toUpperCase() + item.day_of_week.slice(1)
+                  : ''; 
+      
+      if (plan[day]) {
+        const mealIndex = typeof item.meal === 'string' 
+                          ? ['Breakfast', 'Lunch', 'Dinner'].indexOf(item.meal)
+                          : -1; 
+
+        if (mealIndex !== -1) {
+          plan[day][mealIndex] = item;
+        } else {
+          console.warn(`Unexpected mealType for ${item.name} on ${item.day_of_week}: ${item.meal}`);
+        }
+      } else {
+        console.warn(`Unexpected day_of_week for ${item.name}: ${item.day_of_week}`);
+      }
+    });
+    return plan;
+  };
+
+  const fetchExistingMealPlan = async () => {
+    if (authLoading || !user || !user.id) {
+      console.log("Skipping fetchExistingMealPlan: Auth loading or user not available.");
       return;
     }
 
-    // Simulate generation
-    setTimeout(() => {
-      setGenerated(true);
-    }, 300);
+    setIsGenerating(true); 
+    setInitialLoadAttempted(true); 
+
+    try {
+      const response = await apiClient.get('/foods/'); 
+      console.log("Response from GET /foods/:", response.data);
+
+      if (response.status === 200 && response.data && Array.isArray(response.data.data)) {
+        if (response.data.data.length > 0) {
+          showSuccessToast("Existing meal plan loaded!");
+          const processedPlan = processFoodItemsToMealPlan(response.data.data);
+          setGeneratedMealPlan(processedPlan);
+        } else {
+          console.log("GET /foods/ returned empty data. No existing meal plan found for user.");
+          setGeneratedMealPlan(null);
+        }
+      } else {
+        console.log("Unexpected response structure from GET /foods/:", response.data);
+        showErrorToast(response.data?.message || 'Failed to load existing meal plan. Unexpected response.');
+        setGeneratedMealPlan(null); // Clear any old plan
+      }
+    } catch (error: any) {
+      console.error('Error fetching existing meal plan (GET /foods/):', error.response?.data || error.message);
+      if (error.response?.status === 404 || error.response?.status === 204) { 
+        console.log("Server indicated no existing meal plan (e.g., 404/204).");
+        setGeneratedMealPlan(null); // Ensure "Generate Timetable" button shows
+      } else {
+        showErrorToast(error.response?.data?.message || 'Failed to load existing meal plan. Please try again.');
+        setGeneratedMealPlan(null); // Clear any old plan on general error
+      }
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const openMealDetail = (day: string) => {
-    const items = mockMealPlan[day as keyof typeof mockMealPlan];
-    setSelectedMeal({ title: day, items });
+  useEffect(() => {
+    if (!authLoading && user && user.id && !initialLoadAttempted) {
+      fetchExistingMealPlan();
+    }
+  }, [authLoading, user, initialLoadAttempted]);
+
+  
+  const handleGenerate = async () => {
+    if (authLoading) {
+      showErrorToast("Authenticating.... please wait.");
+      return;
+    }
+    if (!user || !user.id) {
+      showErrorToast("User not logged in. Please log in to generate a timetable.");
+      return;
+    }
+    if (!country.trim()) {
+      showErrorToast('Please enter your country');
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      const response = await apiClient.post('/foods/', {
+        country: country,
+        tribe: tribe,
+        user_id: user.id,
+      });
+
+      if (response.status === 200 && response.data && Array.isArray(response.data.data)) {
+        showSuccessToast('Meal Plan generated successfully!');
+        console.log('Generated meal plan data:', response.data.data);
+        const processedPlan = processFoodItemsToMealPlan(response.data.data);
+        setGeneratedMealPlan(processedPlan);
+      } else {
+        showErrorToast(response.data?.message || 'Failed to generate meal plan. Unexpected response format.');
+      }
+    } catch (error: any) {
+      console.error('Error during meal plan generation (POST /foods/):', error.response?.data || error.message);
+      if (error.response?.status === 409 && error.response.data?.message) {
+        showErrorToast(`Generation failed: ${error.response.data.message}. You already have a timetable. Regenerating individual meals is possible.`);
+        if (!generatedMealPlan) {
+          fetchExistingMealPlan();
+        }
+      } else {
+        showErrorToast(error.response?.data?.message || 'An error occurred during generation. Please try again.');
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  
+  const handleRegenerateSingleMeal = async (mealToRegenerate: FoodItemResponse) => {
+    if (authLoading) {
+      showErrorToast("Authenticating... please wait.");
+      return;
+    }
+    if (!user || !user.id) {
+      showErrorToast("User not logged in. Cannot regenerate meal.");
+      return;
+    }
+    setIsGenerating(true); 
+
+    try {
+    
+      if (!mealToRegenerate.name || typeof mealToRegenerate.name !== 'string' ||
+          !mealToRegenerate.origin || typeof mealToRegenerate.origin !== 'string' ||
+          !mealToRegenerate.day_of_week || typeof mealToRegenerate.day_of_week !== 'string' ||
+          !mealToRegenerate.meal || typeof mealToRegenerate.meal !== 'string') {
+        showErrorToast("Missing or invalid meal details for regeneration.");
+        setIsGenerating(false);
+        return;
+      }
+
+      const response = await apiClient.post('/foods/regenerate', {
+        user_id: user.id,
+        name: mealToRegenerate.name,
+        origin: mealToRegenerate.origin,
+        day_of_week: mealToRegenerate.day_of_week,
+        meal: mealToRegenerate.meal,
+      });
+
+      if (response.status === 200 && response.data && response.data.data) {
+        showSuccessToast('Meal regenerated successfully!');
+        console.log('Regenerated single meal data:', response.data.data);
+
+        const newMealItem: FoodItemResponse = response.data.data;
+
+        setGeneratedMealPlan(prevPlan => {
+          if (!prevPlan) return null;
+
+          const updatedPlan = { ...prevPlan };
+          const day = typeof newMealItem.day_of_week === 'string' 
+                      ? newMealItem.day_of_week.charAt(0).toUpperCase() + newMealItem.day_of_week.slice(1)
+                      : '';
+          const mealIndex = typeof newMealItem.meal === 'string' 
+                            ? ['Breakfast', 'Lunch', 'Dinner'].indexOf(newMealItem.meal)
+                            : -1;
+
+          if (updatedPlan[day] && mealIndex !== -1) {
+            updatedPlan[day][mealIndex] = newMealItem;
+          } else {
+            console.warn("Could not update meal plan with regenerated item due to unexpected data:", newMealItem);
+          }
+          return updatedPlan;
+        });
+
+        setSelectedMeal(null); 
+
+      } else {
+        showErrorToast(response.data?.message || 'Failed to regenerate meal. Unexpected response format.');
+      }
+    } catch (error: any) {
+      console.error('Error during single meal regeneration:', error.response?.data || error.message);
+      showErrorToast(error.response?.data?.message || 'An error occurred during regeneration. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+
+  const days = generatedMealPlan ? Object.keys(generatedMealPlan) : [];
+
+  const openMealDetail = (day: string, mealIndex: number) => {
+    if (generatedMealPlan && generatedMealPlan[day] && generatedMealPlan[day][mealIndex]) {
+      const mealItem = generatedMealPlan[day][mealIndex];
+      if (mealItem && mealItem.name !== 'N/A') {
+        const mealType = ['Breakfast', 'Lunch', 'Dinner'][mealIndex];
+        setSelectedMeal({ title: `${day} - ${mealType}`, mealItem: mealItem });
+      } else {
+        showErrorToast('No meal details available for this slot.');
+      }
+    } else {
+      showErrorToast('No meal details available for this slot.');
+    }
   };
 
   return (
@@ -60,10 +265,9 @@ export default function Timetable() {
             Personalized Meal Timetable
           </Text>
         </View>
-          <Text className="text-[17px] text-black-00 mb-6">
-            Enter your location and tribe to generate a custom weekly meal plan.
-          </Text>
-        
+        <Text className="text-[17px] text-black-00 mb-6">
+          Enter your location and tribe to generate a custom weekly meal plan.
+        </Text>
 
         <TextInput
           value={country}
@@ -73,45 +277,77 @@ export default function Timetable() {
         />
 
         <TextInput
+          value={tribe}
           onChangeText={setTribe}
           placeholder="Tribe (optional)"
           className="border border-gray-300 rounded-lg p-4 mb-6"
         />
 
-        {/* Generate Button */}
-        {!generated ? (
+        {/* --- Dynamic Buttons Section --- */}
+
+        {/* Loading Indicator for any action (initial load, generate, regenerate) */}
+        {(isGenerating || authLoading) && (
+          <View className="py-4 items-center justify-center">
+            <ActivityIndicator size="large" color="#1C5403" />
+            <Text className="text-gray-600 mt-2">
+              {authLoading ? "Loading user data..." : "Processing request..."}
+            </Text>
+          </View>
+        )}
+
+        {/* "Generate Timetable" button: Show ONLY if no timetable is loaded AND not currently loading */}
+        {!generatedMealPlan && !isGenerating && !authLoading && (
           <TouchableOpacity
-            onPress={handleGenerate}
+            onPress={handleGenerate} // Calls POST /foods/ for initial generation
             className={`py-4 rounded-xl items-center justify-center ${
               country.trim() ? 'bg-[#1C5403]' : 'bg-gray-300'
             }`}
-            disabled={!country.trim()}
+            disabled={!country.trim()} 
           >
             <Text className="text-white font-semibold">Generate Timetable</Text>
           </TouchableOpacity>
-        ) : (
+        )}
+
+        {/* "Regenerate Full Timetable" button: Show ONLY if a timetable is loaded AND not currently loading */}
+        {generatedMealPlan && !isGenerating && !authLoading && (
+          <TouchableOpacity
+            onPress={handleGenerate} 
+            className={`py-4 rounded-xl items-center justify-center mt-8 ${
+              country.trim() ? 'bg-[#1C5403]' : 'bg-gray-300'
+            }`}
+            disabled={!country.trim()} 
+          >
+            <Text className="text-white font-semibold">Regenerate Full Timetable</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Display Timetable if generatedMealPlan exists */}
+        {generatedMealPlan && (
           <>
             <View className="mt-8">
               {days.map((day) => (
                 <View key={day} className="mb-6">
                   <Text className="font-bold text-base text-gray-700">{day}</Text>
                   <View className="flex-row justify-between mt-2">
+                    {/* Breakfast Button */}
                     <TouchableOpacity
-                      onPress={() => openMealDetail(day)}
+                      onPress={() => openMealDetail(day, 0)}
                       className="flex-1 bg-[#1C5403] rounded-lg py-4 items-center justify-center mx-1"
                     >
                       <Text className="text-white font-semibold">Breakfast</Text>
                     </TouchableOpacity>
 
+                    {/* Lunch Button */}
                     <TouchableOpacity
-                      onPress={() => openMealDetail(day)}
+                      onPress={() => openMealDetail(day, 1)}
                       className="flex-1 bg-[#1C5403] rounded-lg py-4 items-center justify-center mx-1"
                     >
                       <Text className="text-white font-semibold">Lunch</Text>
                     </TouchableOpacity>
 
+                    {/* Dinner Button */}
                     <TouchableOpacity
-                      onPress={() => openMealDetail(day)}
+                      onPress={() => openMealDetail(day, 2)}
                       className="flex-1 bg-[#1C5403] rounded-lg py-4 items-center justify-center mx-1"
                     >
                       <Text className="text-white font-semibold">Dinner</Text>
@@ -129,8 +365,10 @@ export default function Timetable() {
         <MealPopup
           visible={!!selectedMeal}
           onClose={() => setSelectedMeal(null)}
-          mealItems={selectedMeal.items}
+          mealItems={[selectedMeal.mealItem.name]}
           title={selectedMeal.title}
+          onRegenerate={() => handleRegenerateSingleMeal(selectedMeal.mealItem)}
+          isRegenerating={isGenerating}
         />
       )}
     </KeyboardAvoidingView>
