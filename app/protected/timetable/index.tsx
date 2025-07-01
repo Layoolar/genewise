@@ -40,10 +40,9 @@ export default function Timetable() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedMealPlan, setGeneratedMealPlan] = useState<MealPlanDisplay | null>(null);
   const [selectedMeal, setSelectedMeal] = useState<{ title: string; mealItem: FoodItemResponse } | null>(null);
-  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false); // Tracks if initial load of existing plan was attempted
+  const [initialLoadAttempted, setInitialLoadAttempted] = useState(false); 
 
 
-  // Helper function to process the raw array of FoodItemResponse into the display format
   const processFoodItemsToMealPlan = (foodItems: FoodItemResponse[]): MealPlanDisplay => {
     const plan: MealPlanDisplay = {
       Monday: [null, null, null], Tuesday: [null, null, null], Wednesday: [null, null, null],
@@ -93,21 +92,21 @@ export default function Timetable() {
           setGeneratedMealPlan(processedPlan);
         } else {
           console.log("GET /foods/ returned empty data. No existing meal plan found for user.");
-          setGeneratedMealPlan(null);
+          setGeneratedMealPlan(null); 
         }
       } else {
         console.log("Unexpected response structure from GET /foods/:", response.data);
         showErrorToast(response.data?.message || 'Failed to load existing meal plan. Unexpected response.');
-        setGeneratedMealPlan(null); // Clear any old plan
+        setGeneratedMealPlan(null); 
       }
     } catch (error: any) {
       console.error('Error fetching existing meal plan (GET /foods/):', error.response?.data || error.message);
       if (error.response?.status === 404 || error.response?.status === 204) { 
         console.log("Server indicated no existing meal plan (e.g., 404/204).");
-        setGeneratedMealPlan(null); // Ensure "Generate Timetable" button shows
+        setGeneratedMealPlan(null); 
       } else {
         showErrorToast(error.response?.data?.message || 'Failed to load existing meal plan. Please try again.');
-        setGeneratedMealPlan(null); // Clear any old plan on general error
+        setGeneratedMealPlan(null); 
       }
     } finally {
       setIsGenerating(false);
@@ -120,8 +119,8 @@ export default function Timetable() {
     }
   }, [authLoading, user, initialLoadAttempted]);
 
-  
-  const handleGenerate = async () => {
+ 
+  const handleGenerateInitialTimetable = async () => {
     if (authLoading) {
       showErrorToast("Authenticating.... please wait.");
       return;
@@ -136,6 +135,7 @@ export default function Timetable() {
     }
 
     setIsGenerating(true);
+    setGeneratedMealPlan(null); 
     
     try {
       const response = await apiClient.post('/foods/', {
@@ -153,12 +153,10 @@ export default function Timetable() {
         showErrorToast(response.data?.message || 'Failed to generate meal plan. Unexpected response format.');
       }
     } catch (error: any) {
-      console.error('Error during meal plan generation (POST /foods/):', error.response?.data || error.message);
+      console.error('Error during initial meal plan generation (POST /foods/):', error.response?.data || error.message);
       if (error.response?.status === 409 && error.response.data?.message) {
-        showErrorToast(`Generation failed: ${error.response.data.message}. You already have a timetable. Regenerating individual meals is possible.`);
-        if (!generatedMealPlan) {
-          fetchExistingMealPlan();
-        }
+        showErrorToast(`Generation failed: ${error.response.data.message}. You already have a timetable. Please use 'Regenerate Full Timetable' or regenerate individual meals.`);
+        fetchExistingMealPlan(); 
       } else {
         showErrorToast(error.response?.data?.message || 'An error occurred during generation. Please try again.');
       }
@@ -167,7 +165,50 @@ export default function Timetable() {
     }
   };
 
-  
+  const handleRegenerateFullTimetable = async () => {
+    if (authLoading) {
+      showErrorToast("Authenticating.... please wait.");
+      return;
+    }
+    if (!user || !user.id) {
+      showErrorToast("User not logged in. Please log in to regenerate a timetable.");
+      return;
+    }
+    if (!country.trim()) {
+      showErrorToast('Please enter your country');
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratedMealPlan(null); 
+    
+    try {
+      const response = await apiClient.post('/foods/regenerate', {
+        country: country,
+        tribe: tribe,
+        user_id: user.id,
+      }, {
+        timeout: 30000, 
+      });
+
+      if (response.status === 200 && response.data && Array.isArray(response.data.data)) {
+        showSuccessToast('Full timetable regenerated successfully!');
+        console.log('Regenerated full meal plan data:', response.data.data);
+        const processedPlan = processFoodItemsToMealPlan(response.data.data);
+        setGeneratedMealPlan(processedPlan);
+      } else {
+        showErrorToast(response.data?.message || 'Failed to regenerate full meal plan. Unexpected response format.');
+      }
+    } catch (error: any) {
+      console.error('Error during full meal plan regeneration (POST /foods/regenerate):', error.response?.data || error.message);
+      showErrorToast(error.response?.data?.message || 'An error occurred during full regeneration. Please try again.');
+      fetchExistingMealPlan();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+
   const handleRegenerateSingleMeal = async (mealToRegenerate: FoodItemResponse) => {
     if (authLoading) {
       showErrorToast("Authenticating... please wait.");
@@ -180,7 +221,6 @@ export default function Timetable() {
     setIsGenerating(true); 
 
     try {
-    
       if (!mealToRegenerate.name || typeof mealToRegenerate.name !== 'string' ||
           !mealToRegenerate.origin || typeof mealToRegenerate.origin !== 'string' ||
           !mealToRegenerate.day_of_week || typeof mealToRegenerate.day_of_week !== 'string' ||
@@ -283,9 +323,7 @@ export default function Timetable() {
           className="border border-gray-300 rounded-lg p-4 mb-6"
         />
 
-        {/* --- Dynamic Buttons Section --- */}
 
-        {/* Loading Indicator for any action (initial load, generate, regenerate) */}
         {(isGenerating || authLoading) && (
           <View className="py-4 items-center justify-center">
             <ActivityIndicator size="large" color="#1C5403" />
@@ -298,7 +336,7 @@ export default function Timetable() {
         {/* "Generate Timetable" button: Show ONLY if no timetable is loaded AND not currently loading */}
         {!generatedMealPlan && !isGenerating && !authLoading && (
           <TouchableOpacity
-            onPress={handleGenerate} // Calls POST /foods/ for initial generation
+            onPress={handleGenerateInitialTimetable} 
             className={`py-4 rounded-xl items-center justify-center ${
               country.trim() ? 'bg-[#1C5403]' : 'bg-gray-300'
             }`}
@@ -311,11 +349,11 @@ export default function Timetable() {
         {/* "Regenerate Full Timetable" button: Show ONLY if a timetable is loaded AND not currently loading */}
         {generatedMealPlan && !isGenerating && !authLoading && (
           <TouchableOpacity
-            onPress={handleGenerate} 
+            onPress={handleRegenerateFullTimetable} // Calls POST /foods/regenerate for full regeneration
             className={`py-4 rounded-xl items-center justify-center mt-8 ${
               country.trim() ? 'bg-[#1C5403]' : 'bg-gray-300'
             }`}
-            disabled={!country.trim()} 
+            disabled={!country.trim()} // Disable if country is empty
           >
             <Text className="text-white font-semibold">Regenerate Full Timetable</Text>
           </TouchableOpacity>
