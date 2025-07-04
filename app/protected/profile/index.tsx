@@ -103,9 +103,9 @@ export default function ProfileScreen() {
         allergies,
         familyHistory,
         foodPreferences,
-      });
-      // router.push('/dashboard');
+      })
     }
+     router.push('/onboarding/onboarding');
   };
 
   return (

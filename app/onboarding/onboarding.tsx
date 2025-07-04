@@ -17,6 +17,27 @@ import { Dropdown } from '../reusables/Dropdown';
 import { FileUpload } from '../reusables/FileUpload';
 import { PrimaryButton } from '../reusables/PrimaryButton';
 
+interface ConsentCheckboxProps {
+  label: string;
+  isChecked: boolean;
+  onPress: () => void;
+  error?: string;
+}
+
+const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({ label, isChecked, onPress, error }) => (
+  <View className="mb-4">
+    <TouchableOpacity onPress={onPress} className="flex-row items-center">
+      <Ionicons
+        name={isChecked ? 'checkbox-outline' : 'square-outline'}
+        size={24}
+        color={isChecked ? '#1C5403' : '#6B7280'}
+      />
+      <Text className="ml-3 text-base text-gray-700 flex-1">{label}</Text>
+    </TouchableOpacity>
+    {error ? <Text className="text-red-500 text-sm mt-1 ml-9">{error}</Text> : null}
+  </View>
+);
+
 export default function OnboardingScreen() {
   const router = useRouter();
 
@@ -27,9 +48,14 @@ export default function OnboardingScreen() {
   const [genotype, setGenotype] = useState<string | null>(null);
   const [dnaFile, setDnaFile] = useState<any>(null);
 
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [dnaConsentAgreed, setDnaConsentAgreed] = useState(false);
+
   const [errors, setErrors] = useState({
     bloodGroup: '',
     genotype: '',
+    termsConsent: '',
+    dnaConsent: '',   
   });
 
   const handleContinue = () => {
@@ -37,6 +63,8 @@ export default function OnboardingScreen() {
     const newErrors = {
       bloodGroup: '',
       genotype: '',
+      termsConsent: '',
+      dnaConsent: '',
     };
 
     if (!bloodGroup) {
@@ -49,10 +77,20 @@ export default function OnboardingScreen() {
       valid = false;
     }
 
+    if (!termsAgreed) {
+      newErrors.termsConsent = 'You must agree to the terms and conditions';
+      valid = false;
+    }
+
+    if (!dnaConsentAgreed) {
+      newErrors.dnaConsent = 'You must consent to DNA usage for healthy meals';
+      valid = false;
+    }
+
     setErrors(newErrors);
 
     if (valid) {
-      console.log('Proceeding with:', { bloodGroup, genotype, dnaFile });
+      console.log('Proceeding with:', { bloodGroup, genotype, dnaFile, termsAgreed, dnaConsentAgreed });
       router.push('/protected/chat/chat');
     }
   };
@@ -67,7 +105,7 @@ export default function OnboardingScreen() {
           {/* Top Gradient Section */}
           <LinearGradient colors={['#1C5403', '#020d00']} style={styles.gradientContainer}>
             <Image source={require('../../assets/images/genewiser1.png')} style={styles.logo} />
-           
+            
             <View style={styles.headerTextContainer}>
               <Text style={styles.onboardingText}>Onboarding 🧬</Text>
             <Text style={styles.formText}>Fill up the form below.</Text>
@@ -107,6 +145,22 @@ export default function OnboardingScreen() {
 
             <FileUpload label="DNA (Optional)" onFileSelected={setDnaFile} className="mt-4" />
 
+            {/* Consent Checkboxes */}
+            <View className="mt-6 mb-4">
+              <ConsentCheckbox
+                label="I agree with the terms and conditions of this app"
+                isChecked={termsAgreed}
+                onPress={() => setTermsAgreed(!termsAgreed)}
+                error={errors.termsConsent}
+              />
+              <ConsentCheckbox
+                label="I agree that genewise can use my DNA to generate healthy meals for me"
+                isChecked={dnaConsentAgreed}
+                onPress={() => setDnaConsentAgreed(!dnaConsentAgreed)}
+                error={errors.dnaConsent}
+              />
+            </View>
+
             <PrimaryButton title="Continue" onPress={handleContinue} className="mt-6" />
 
             <TouchableOpacity
@@ -144,7 +198,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerTextContainer: {
-     marginTop: Platform.select({ android: 32, ios: 0 }),
+      marginTop: Platform.select({ android: 32, ios: 0 }),
   },
   onboardingText: {
     color: 'white',
