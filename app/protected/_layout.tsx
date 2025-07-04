@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { useRouter, useSegments, Slot, Stack } from 'expo-router'; // <-- Use Slot instead of Outlet
+import { useRouter, useSegments, Slot, Stack } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
+import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../hooks/useAuth';
 
 export default function ProtectedLayout() {
@@ -47,6 +48,11 @@ export default function ProtectedLayout() {
       icon: <Ionicons name="person" size={24} color="#1C5403" />,
       route: '/protected/profile',
     },
+    {
+      label: 'Settings',
+      icon: <Feather name="settings" size={24} color="#1C5403" />,
+      route: '/protected/settings'
+    }
   ];
 
   return (
