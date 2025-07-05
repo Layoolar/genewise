@@ -12,6 +12,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 import { Dropdown } from '../reusables/Dropdown';
 import { FileUpload } from '../reusables/FileUpload';
@@ -20,23 +21,109 @@ import { PrimaryButton } from '../reusables/PrimaryButton';
 interface ConsentCheckboxProps {
   label: string;
   isChecked: boolean;
-  onPress: () => void;
+  onPress?: () => void; 
   error?: string;
+  onLabelPress?: () => void; 
+  disableCheckbox?: boolean; 
 }
 
-const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({ label, isChecked, onPress, error }) => (
+const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({ 
+  label, 
+  isChecked, 
+  onPress, 
+  error, 
+  onLabelPress, 
+  disableCheckbox
+ }) => (
   <View className="mb-4">
-    <TouchableOpacity onPress={onPress} className="flex-row items-center">
-      <Ionicons
-        name={isChecked ? 'checkbox-outline' : 'square-outline'}
-        size={24}
-        color={isChecked ? '#1C5403' : '#6B7280'}
-      />
-      <Text className="ml-3 text-base text-gray-700 flex-1">{label}</Text>
-    </TouchableOpacity>
+    <View className="flex-row items-center">
+      <TouchableOpacity onPress={onPress} disabled={disableCheckbox}>
+        <Ionicons
+          name={isChecked ? 'checkbox-outline' : 'square-outline'}
+          size={24}
+          color={isChecked ? '#1C5403' : '#6B7280'}
+        />
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={onLabelPress || (disableCheckbox ? undefined : onPress)} className="flex-1 ml-3">
+        <Text className="text-base text-gray-700">{label}</Text>
+      </TouchableOpacity>
+    </View>
     {error ? <Text className="text-red-500 text-sm mt-1 ml-9">{error}</Text> : null}
   </View>
 );
+
+// Terms and Conditions Modal Component
+interface TermsAndConditionsModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onAgreeAndClose: () => void; 
+}
+
+const TermsAndConditionsModal: React.FC<TermsAndConditionsModalProps> = ({
+   visible, 
+   onClose, 
+   onAgreeAndClose 
+ }) => {
+  const termsContent = `
+## Genewise App: Terms and Conditions
+
+**Last Updated:** July 5, 2025
+
+Welcome to Genewise! This application provides personalized food suggestions based on your provided health data, including blood group, genotype, and optionally, your DNA information. By using this app, you agree to the following terms and conditions.
+
+**1. Acceptance of Terms**
+By accessing or using the Genewise app, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use the app.
+
+**2. Purpose of the App**
+Genewise is designed to offer **food suggestions only**. These suggestions are generated based on the health data you provide. The app is a tool for informational purposes and should not be considered a substitute for professional medical advice, diagnosis, or treatment.
+
+**3. Data Collection and Privacy**
+* **Required Information:** To provide personalized suggestions, we collect your blood group and genotype.
+* **Optional DNA Information:** You have the option to upload your DNA information. If you choose to do so, you explicitly consent to Genewise using this data solely for the purpose of generating more tailored healthy meal suggestions.
+* **Data Usage:** Your data (blood group, genotype, and optional DNA) will be used exclusively within the Genewise app to personalize your food recommendations. We are committed to protecting your privacy and handling your data securely. Please refer to our Privacy Policy for more details on how we collect, use, and protect your information.
+
+**4. Disclaimer of Medical Advice**
+* **Not a Medical Professional:** Genewise is not a medical device, nor are its suggestions medical advice. The app does not diagnose, treat, cure, or prevent any disease or medical condition.
+* **Consult a Professional:** Always consult with a qualified healthcare professional (doctor, dietitian, nutritionist) before making any decisions about your diet, health, or medical treatment, especially if you have existing health conditions, allergies, or concerns.
+* **No Responsibility:** Genewise, its developers, and affiliates cannot be held responsible for any health outcomes, adverse effects, or damages that may arise from following the app's suggestions. You use this app and its suggestions at your own risk.
+
+**5. User Responsibilities**
+* **Accuracy of Information:** You are responsible for providing accurate and truthful information regarding your blood group, genotype, and any optional DNA data. Inaccurate information may lead to inappropriate food suggestions.
+* **Independent Verification:** You should independently verify any information obtained from the app before relying on it.
+
+**6. Limitation of Liability**
+To the fullest extent permitted by law, Genewise and its affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses, resulting from (a) your access to or use of or inability to access or use the app; (b) any conduct or content of any third party on the app; or (c) unauthorized access, use, or alteration of your transmissions or content.
+
+**7. Changes to Terms**
+We reserve the right to modify these Terms and Conditions at any time. We will notify you of any significant changes by posting the new terms within the app. Your continued use of the app after such modifications will constitute your acknowledgment of the modified Terms and Conditions and agreement to abide and be bound by them.
+
+**8. Contact Us**
+If you have any questions about these Terms and Conditions, please contact us through the app's support channels.
+  `;
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.termsModalContent}>
+          <ScrollView style={styles.termsScrollView}>
+            <Text style={styles.termsTitle}>Genewise App: Terms and Conditions</Text>
+            <Text style={styles.termsText}>{termsContent.trim()}</Text>
+          </ScrollView>
+          <TouchableOpacity onPress={onAgreeAndClose} style={styles.termsAgreeButton}>
+            <Text style={styles.termsCloseButtonText}>I Understand and Agree</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -48,15 +135,23 @@ export default function OnboardingScreen() {
   const [genotype, setGenotype] = useState<string | null>(null);
   const [dnaFile, setDnaFile] = useState<any>(null);
 
+ 
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [dnaConsentAgreed, setDnaConsentAgreed] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false); 
 
   const [errors, setErrors] = useState({
     bloodGroup: '',
     genotype: '',
-    termsConsent: '',
-    dnaConsent: '',   
+    termsConsent: '', 
+    dnaConsent: '', 
   });
+
+ 
+  const handleAgreeToTerms = () => {
+    setTermsAgreed(true);
+    setShowTermsModal(false);
+  };
 
   const handleContinue = () => {
     let valid = true;
@@ -77,6 +172,7 @@ export default function OnboardingScreen() {
       valid = false;
     }
 
+    // Validate consent checkboxes
     if (!termsAgreed) {
       newErrors.termsConsent = 'You must agree to the terms and conditions';
       valid = false;
@@ -143,15 +239,17 @@ export default function OnboardingScreen() {
               error={errors.genotype}
             />
 
-            <FileUpload label="DNA (Optional)" onFileSelected={setDnaFile} className="mt-4" />
+            <FileUpload label="DNA (Optional)" onFileSelected={setDnaFile} />
 
             {/* Consent Checkboxes */}
             <View className="mt-6 mb-4">
               <ConsentCheckbox
                 label="I agree with the terms and conditions of this app"
                 isChecked={termsAgreed}
-                onPress={() => setTermsAgreed(!termsAgreed)}
+                onPress={() => { /* Checkbox click is disabled for terms */ }}
+                onLabelPress={() => setShowTermsModal(true)} 
                 error={errors.termsConsent}
+                disableCheckbox={true} 
               />
               <ConsentCheckbox
                 label="I agree that genewise can use my DNA to generate healthy meals for me"
@@ -172,6 +270,13 @@ export default function OnboardingScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Terms and Conditions Modal */}
+      <TermsAndConditionsModal
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)} 
+        onAgreeAndClose={handleAgreeToTerms} 
+      />
     </SafeAreaView>
   );
 }
@@ -209,5 +314,50 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     marginTop: 4,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  termsModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  termsScrollView: {
+    marginBottom: 20,
+  },
+  termsTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#1C5403',
+  },
+  termsText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#333',
+  },
+  termsAgreeButton: { 
+    backgroundColor: '#1C5403',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  termsCloseButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
