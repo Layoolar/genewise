@@ -8,11 +8,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Linking,
-  ActivityIndicator
+  SafeAreaView,
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import apiClient from '@/app/utils/apiClient';
 import { showSuccessToast, showErrorToast } from '@/app/utils/toast';
+import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Professional {
   id: number;
@@ -20,6 +23,7 @@ interface Professional {
   role: 'Doctor' | 'Dietitian' | 'Nutritionist';
   price: string;
   image: string;
+  calendlyLink?: string; 
 }
 
 interface FoodItem {
@@ -37,6 +41,10 @@ export default function FoodsScreen() {
   const [selectedProType, setSelectedProType] = useState<'Doctor' | 'Dietitian/Nutritionist' | null>(null);
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  
+  const [calendlyModalVisible, setCalendlyModalVisible] = useState(false);
+  const [calendlyUrl, setCalendlyUrl] = useState('');
 
   const fetchFoods = async () => {
     setIsLoading(true); 
@@ -70,6 +78,7 @@ export default function FoodsScreen() {
       role: 'Doctor',
       price: '$50/session',
       image: 'https://placehold.co/120x120/FFC0CB/000000?text=Dr.+Adeola',
+      calendlyLink: 'https://calendly.com/olayiwolaayoola/new-meeting' 
     },
     {
       id: 2,
@@ -77,6 +86,7 @@ export default function FoodsScreen() {
       role: 'Dietitian',
       price: '$40/session',
       image: 'https://placehold.co/120x120/ADD8E6/000000?text=Chantel', 
+      calendlyLink: 'https://calendly.com/olayiwolaayoola/new-meeting' 
     },
     {
       id: 3, 
@@ -84,6 +94,7 @@ export default function FoodsScreen() {
       role: 'Nutritionist',
       price: '$40/session',
       image: 'https://placehold.co/120x120/90EE90/000000?text=Grace', 
+      calendlyLink: 'https://calendly.com/olayiwolaayoola/new-meeting' 
     },
   ];
 
@@ -145,18 +156,22 @@ export default function FoodsScreen() {
                   {selectedProfessional.role} • {selectedProfessional.price}
                 </Text>
 
-                {/* Schedule Button */}
+                {/* Schedule Button - Now opens Calendly Webview */}
                 <TouchableOpacity
                   style={styles.scheduleCard}
                   onPress={() => {
-                    const meetLink = 'https://meet.google.com/new?hs=193&deep_link_id=new-room' + Date.now();
-                    Linking.openURL(meetLink).catch(() =>
-                      alert('Could not open Google Meet')
-                    );
+                    if (selectedProfessional.calendlyLink) {
+                      setCalendlyUrl(selectedProfessional.calendlyLink);
+                      setCalendlyModalVisible(true);
+                      setModalVisible(false);
+                      setSelectedProfessional(null); 
+                    } else {
+                      showErrorToast('Calendly link not available for this professional.');
+                    }
                   }}
                 >
-                  <Text style={styles.slotText}>Mon 10:00 AM</Text>
-                  <Text style={styles.joinText}>Join Now ➡️</Text>
+                  <Text style={styles.slotText}>Schedule Appointment</Text>
+                  <Text style={styles.joinText}>Open Calendly ➡️</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -225,6 +240,42 @@ export default function FoodsScreen() {
           </View>
         </View>
       )}
+
+      {/* Calendly WebView Modal */}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={calendlyModalVisible}
+        onRequestClose={() => setCalendlyModalVisible(false)}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={styles.webviewHeader}>
+            <TouchableOpacity onPress={() => setCalendlyModalVisible(false)} style={styles.webviewCloseButton}>
+              <Ionicons name="close" size={28} color="#1C5403" />
+            </TouchableOpacity>
+            <Text style={styles.webviewTitle}>Schedule with Calendly</Text>
+          </View>
+          {calendlyUrl ? (
+            <WebView
+              source={{ uri: calendlyUrl }}
+              style={{ flex: 1 }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.webviewLoading}>
+                  <ActivityIndicator size="large" color="#1C5403" />
+                  <Text className="mt-4 text-gray-600">Loading Calendly...</Text>
+                </View>
+              )}
+            />
+          ) : (
+            <View style={styles.webviewError}>
+              <Text style={styles.webviewErrorText}>No Calendly URL provided.</Text>
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -325,5 +376,52 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+ 
+  webviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: 'white',
+  },
+  webviewTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1C5403',
+    flex: 1, 
+    textAlign: 'center', 
+    marginRight: 40, 
+  },
+  webviewCloseButton: {
+    padding: 5,
+    position: 'absolute', 
+    left: 10,
+    zIndex: 1, 
+  },
+  webviewLoading: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    zIndex: 999, 
+  },
+  webviewError: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8d7da',
+  },
+  webviewErrorText: {
+    color: '#721c24',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
