@@ -45,7 +45,7 @@ const VerifyScreen: React.FC = () => {
 
          if (response.status === 200) {
           showSuccessToast('Verificatuion successful 🎉');
-          router.push('/auth/login');
+          router.push('/onboarding/onboarding');
          }
        } catch (error: any) {
           const errorMessage =
@@ -128,7 +128,7 @@ const VerifyScreen: React.FC = () => {
                    onPress={async () => {
                     await handleVerify(values);
                    }}
-                   className="opacity-60 mt-6" 
+                   className="mt-6" 
                    loading={loading}
                    />
                 </>

@@ -119,7 +119,7 @@ export default function Timetable() {
     }
   }, [authLoading, user, initialLoadAttempted]);
 
- 
+  
   const handleGenerateInitialTimetable = async () => {
     if (authLoading) {
       showErrorToast("Authenticating.... please wait.");
@@ -201,14 +201,18 @@ export default function Timetable() {
       }
     } catch (error: any) {
       console.error('Error during full meal plan regeneration (POST /foods/regenerate):', error.response?.data || error.message);
-      showErrorToast(error.response?.data?.message || 'An error occurred during full regeneration. Please try again.');
-      fetchExistingMealPlan();
+      if (error.response?.status === 404 && error.response.data?.message?.includes("no existing foods found for user")) {
+        showErrorToast("No existing timetable found for regeneration. Please use 'Generate Timetable' to create a new one.");
+        setGeneratedMealPlan(null); 
+        showErrorToast(error.response?.data?.message || 'An error occurred during full regeneration. Please try again.');
+      }
     } finally {
       setIsGenerating(false);
     }
   };
 
 
+ 
   const handleRegenerateSingleMeal = async (mealToRegenerate: FoodItemResponse) => {
     if (authLoading) {
       showErrorToast("Authenticating... please wait.");
@@ -221,7 +225,8 @@ export default function Timetable() {
     setIsGenerating(true); 
 
     try {
-      if (!mealToRegenerate.name || typeof mealToRegenerate.name !== 'string' ||
+      if (!mealToRegenerate.id || typeof mealToRegenerate.id !== 'string' || 
+          !mealToRegenerate.name || typeof mealToRegenerate.name !== 'string' ||
           !mealToRegenerate.origin || typeof mealToRegenerate.origin !== 'string' ||
           !mealToRegenerate.day_of_week || typeof mealToRegenerate.day_of_week !== 'string' ||
           !mealToRegenerate.meal || typeof mealToRegenerate.meal !== 'string') {
@@ -232,6 +237,7 @@ export default function Timetable() {
 
       const response = await apiClient.post('/foods/regenerate', {
         user_id: user.id,
+        id: mealToRegenerate.id, 
         name: mealToRegenerate.name,
         origin: mealToRegenerate.origin,
         day_of_week: mealToRegenerate.day_of_week,
@@ -252,8 +258,8 @@ export default function Timetable() {
                       ? newMealItem.day_of_week.charAt(0).toUpperCase() + newMealItem.day_of_week.slice(1)
                       : '';
           const mealIndex = typeof newMealItem.meal === 'string' 
-                            ? ['Breakfast', 'Lunch', 'Dinner'].indexOf(newMealItem.meal)
-                            : -1;
+                                ? ['Breakfast', 'Lunch', 'Dinner'].indexOf(newMealItem.meal)
+                                : -1;
 
           if (updatedPlan[day] && mealIndex !== -1) {
             updatedPlan[day][mealIndex] = newMealItem;
@@ -270,7 +276,12 @@ export default function Timetable() {
       }
     } catch (error: any) {
       console.error('Error during single meal regeneration:', error.response?.data || error.message);
-      showErrorToast(error.response?.data?.message || 'An error occurred during regeneration. Please try again.');
+      if (error.response?.status === 404 && error.response.data?.message?.includes("no existing foods found for user")) {
+        showErrorToast("Cannot regenerate single meal: No existing timetable found. Please generate a full timetable first.");
+        setGeneratedMealPlan(null); 
+      } else {
+        showErrorToast(error.response?.data?.data?.message || error.response?.data?.message || 'An error occurred during regeneration. Please try again.');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -346,14 +357,14 @@ export default function Timetable() {
           </TouchableOpacity>
         )}
 
-        {/* "Regenerate Full Timetable" button: Show ONLY if a timetable is loaded AND not currently loading */}
+        
         {generatedMealPlan && !isGenerating && !authLoading && (
           <TouchableOpacity
-            onPress={handleRegenerateFullTimetable} // Calls POST /foods/regenerate for full regeneration
+            onPress={handleRegenerateFullTimetable} 
             className={`py-4 rounded-xl items-center justify-center mt-8 ${
               country.trim() ? 'bg-[#1C5403]' : 'bg-gray-300'
             }`}
-            disabled={!country.trim()} // Disable if country is empty
+            disabled={!country.trim()} 
           >
             <Text className="text-white font-semibold">Regenerate Full Timetable</Text>
           </TouchableOpacity>
@@ -405,8 +416,8 @@ export default function Timetable() {
           onClose={() => setSelectedMeal(null)}
           mealItems={[selectedMeal.mealItem.name]}
           title={selectedMeal.title}
-          onRegenerate={() => handleRegenerateSingleMeal(selectedMeal.mealItem)}
-          isRegenerating={isGenerating}
+          // onRegenerate={() => handleRegenerateSingleMeal(selectedMeal.mealItem)}
+          // isRegenerating={isGenerating}
         />
       )}
     </KeyboardAvoidingView>

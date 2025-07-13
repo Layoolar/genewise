@@ -42,8 +42,6 @@ export default function ProfileScreen() {
   const [foodPreferences, setFoodPreferences] = useState<string[]>([]);
 
   const [errors, setErrors] = useState({
-    fullName: '',
-    email: '',
     bloodGroup: '',
     genotype: '',
     age: '',
@@ -125,33 +123,50 @@ export default function ProfileScreen() {
   };
 
   const handleSubmit = async () => {
-    let valid = true;
+    // Re-initialize errors for a fresh validation run
     const newErrors = {
-      fullName: '', email: '', bloodGroup: '', genotype: '', age: '',
-      sex: '', height: '', weight: '', activityLevel: '', rhFactor: '',
+      bloodGroup: '', genotype: '', age: '', sex: '', height: '',
+      weight: '', activityLevel: '', rhFactor: '',
     };
+    let currentValid = true; // Use a different variable name to avoid confusion
 
-    // Basic validation for all required fields
-    if (!fullName.trim()) { newErrors.fullName = 'Full name is required'; valid = false; }
-    if (!email.trim()) {
-      newErrors.email = 'Email is required'; valid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Enter a valid email address'; valid = false;
+    // Validation for fields sent to /health/vitals/
+    if (!bloodGroup) { newErrors.bloodGroup = 'Blood group is required'; currentValid = false; }
+    if (!genotype) { newErrors.genotype = 'Genotype is required'; currentValid = false; }
+
+    // Age validation
+    if (age.trim() === '' || isNaN(parseInt(age))) {
+      newErrors.age = 'Age is required and must be a number';
+      currentValid = false;
     }
-    if (!bloodGroup) { newErrors.bloodGroup = 'Blood group is required'; valid = false; }
-    if (!genotype) { newErrors.genotype = 'Genotype is required'; valid = false; }
-    if (!age.trim() || isNaN(parseInt(age))) { newErrors.age = 'Age is required and must be a number'; valid = false; }
-    if (!sex) { newErrors.sex = 'Sex is required'; valid = false; }
-    if (!height.trim() || isNaN(parseFloat(height))) { newErrors.height = 'Height is required and must be a number'; valid = false; }
-    if (!weight.trim() || isNaN(parseFloat(weight))) { newErrors.weight = 'Weight is required and must be a number'; valid = false; }
-    if (!activityLevel) { newErrors.activityLevel = 'Activity level is required'; valid = false; }
-    if (!rhFactor) { newErrors.rhFactor = 'Rh factor is required'; valid = false; }
 
-    setErrors(newErrors);
+    // Sex validation
+    if (!sex) { // Checks for null or empty string
+      newErrors.sex = 'Sex is required';
+      currentValid = false;
+    }
 
-    if (!valid) {
+    // Height validation
+    if (height.trim() === '' || isNaN(parseFloat(height))) {
+      newErrors.height = 'Height is required and must be a number';
+      currentValid = false;
+    }
+
+    // Weight validation
+    if (weight.trim() === '' || isNaN(parseFloat(weight))) {
+      newErrors.weight = 'Weight is required and must be a number';
+      currentValid = false;
+    }
+
+    if (!activityLevel) { newErrors.activityLevel = 'Activity level is required'; currentValid = false; }
+    if (!rhFactor) { newErrors.rhFactor = 'Rh factor is required'; currentValid = false; }
+
+    setErrors(newErrors); // Update error state
+
+    if (!currentValid) { // Use the local validation flag
       showErrorToast('Please fill in all required fields.');
-      return;
+      console.log('Validation failed:', newErrors); // Added for debugging
+      return; // IMPORTANT: Ensure the function exits here if validation fails
     }
 
     setIsSaving(true);
@@ -236,7 +251,7 @@ export default function ProfileScreen() {
                 placeholder="Joy Doe"
                 value={fullName}
                 onChangeText={setFullName}
-                error={errors.fullName}
+                editable={false} // Make Full Name non-editable as it comes from user data
               />
               <Input
                 label="Email *"
@@ -244,7 +259,7 @@ export default function ProfileScreen() {
                 keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
-                error={errors.email}
+                editable={false} // Make Email non-editable as it comes from user data
               />
               <Dropdown
                 label="Blood Group *"
