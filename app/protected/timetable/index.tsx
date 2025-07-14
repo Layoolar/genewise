@@ -1,5 +1,4 @@
 import { MealPopup } from '@/app/reusables/Mealpopup';
-import { useRouter } from 'expo-router';
 import React, { useState, useContext, useEffect } from 'react';
 import {
   ActivityIndicator,
@@ -31,7 +30,6 @@ interface MealPlanDisplay {
 
 
 export default function Timetable() {
-  const router = useRouter();
   const { user, isLoading: authLoading } = useContext(AuthContext); 
 
   const [country, setCountry] = useState('');
@@ -204,6 +202,7 @@ export default function Timetable() {
       if (error.response?.status === 404 && error.response.data?.message?.includes("no existing foods found for user")) {
         showErrorToast("No existing timetable found for regeneration. Please use 'Generate Timetable' to create a new one.");
         setGeneratedMealPlan(null); 
+      } else {
         showErrorToast(error.response?.data?.message || 'An error occurred during full regeneration. Please try again.');
       }
     } finally {
@@ -212,7 +211,6 @@ export default function Timetable() {
   };
 
 
- 
   const handleRegenerateSingleMeal = async (mealToRegenerate: FoodItemResponse) => {
     if (authLoading) {
       showErrorToast("Authenticating... please wait.");
@@ -225,30 +223,22 @@ export default function Timetable() {
     setIsGenerating(true); 
 
     try {
-      if (!mealToRegenerate.id || typeof mealToRegenerate.id !== 'string' || 
-          !mealToRegenerate.name || typeof mealToRegenerate.name !== 'string' ||
-          !mealToRegenerate.origin || typeof mealToRegenerate.origin !== 'string' ||
-          !mealToRegenerate.day_of_week || typeof mealToRegenerate.day_of_week !== 'string' ||
-          !mealToRegenerate.meal || typeof mealToRegenerate.meal !== 'string') {
-        showErrorToast("Missing or invalid meal details for regeneration.");
+      if (!mealToRegenerate.id || typeof mealToRegenerate.id !== 'string') {
+        showErrorToast("Missing or invalid meal ID for regeneration.");
         setIsGenerating(false);
         return;
       }
 
-      const response = await apiClient.post('/foods/regenerate', {
-        user_id: user.id,
-        id: mealToRegenerate.id, 
-        name: mealToRegenerate.name,
-        origin: mealToRegenerate.origin,
-        day_of_week: mealToRegenerate.day_of_week,
-        meal: mealToRegenerate.meal,
+      const response = await apiClient.post('/foods/review', {
+        food_ids: [mealToRegenerate.id], 
       });
 
-      if (response.status === 200 && response.data && response.data.data) {
+     
+      if (response.status === 200 && response.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
         showSuccessToast('Meal regenerated successfully!');
-        console.log('Regenerated single meal data:', response.data.data);
+        console.log('Regenerated single meal data (from /foods/review):', response.data.data);
 
-        const newMealItem: FoodItemResponse = response.data.data;
+        const newMealItem: FoodItemResponse = response.data.data[0]; 
 
         setGeneratedMealPlan(prevPlan => {
           if (!prevPlan) return null;
@@ -272,16 +262,11 @@ export default function Timetable() {
         setSelectedMeal(null); 
 
       } else {
-        showErrorToast(response.data?.message || 'Failed to regenerate meal. Unexpected response format.');
+        showErrorToast(response.data?.message || 'Failed to regenerate meal. Unexpected response format from /foods/review.');
       }
     } catch (error: any) {
-      console.error('Error during single meal regeneration:', error.response?.data || error.message);
-      if (error.response?.status === 404 && error.response.data?.message?.includes("no existing foods found for user")) {
-        showErrorToast("Cannot regenerate single meal: No existing timetable found. Please generate a full timetable first.");
-        setGeneratedMealPlan(null); 
-      } else {
-        showErrorToast(error.response?.data?.data?.message || error.response?.data?.message || 'An error occurred during regeneration. Please try again.');
-      }
+      console.error('Error during single meal regeneration (POST /foods/review):', error.response?.data || error.message);
+      showErrorToast(error.response?.data?.message || 'An error occurred during regeneration. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -416,8 +401,8 @@ export default function Timetable() {
           onClose={() => setSelectedMeal(null)}
           mealItems={[selectedMeal.mealItem.name]}
           title={selectedMeal.title}
-          // onRegenerate={() => handleRegenerateSingleMeal(selectedMeal.mealItem)}
-          // isRegenerating={isGenerating}
+          onRegenerate={() => handleRegenerateSingleMeal(selectedMeal.mealItem)} 
+          isRegenerating={isGenerating}
         />
       )}
     </KeyboardAvoidingView>
