@@ -71,19 +71,18 @@ export default function ProfileScreen() {
         if (userData.health_vitals) {
           const profileData = userData.health_vitals;
           
-          const isMeaningfulProfileData = (
-             profileData.age > 0 &&
-             profileData.height > 0 &&
-             profileData.weight > 0 &&
-             profileData.blood_group &&
-             profileData.genotype &&
-             profileData.sex &&
-             profileData.activity_level &&
-            profileData.rh !== null
-           );
+          const hasMeaningfulHealthVitals = (
+            (profileData.age !== 0 && profileData.age !== null) ||
+            (profileData.height !== 0 && profileData.height !== null) ||
+            (profileData.weight !== 0 && profileData.weight !== null) ||
+            (profileData.blood_group && profileData.blood_group.trim() !== '') ||
+            (profileData.genotype && profileData.genotype.trim() !== '') ||
+            (profileData.sex && profileData.sex.trim() !== '') ||
+            (profileData.activity_level && profileData.activity_level.trim() !== '') ||
+            (profileData.rh !== null) 
+          );
 
-
-          if (isMeaningfulProfileData) {
+          if (hasMeaningfulHealthVitals) {
             setAge(profileData.age?.toString() || '');
             setSex(profileData.sex || null);
             setHeight(profileData.height?.toString() || '');
@@ -96,24 +95,22 @@ export default function ProfileScreen() {
             setAllergies(profileData.allergies || '');
             setFamilyHistory(profileData.family_history || '');
             setFoodPreferences(
-              profileData.food_preferences && typeof profileData.food_preferences === 'string'
+              profileData.food_preferences && typeof profileData.food_preferences === 'string' && profileData.food_preferences.trim() !== '' 
                 ? profileData.food_preferences.split(', ').map((item: string) => item.trim())
                 : []
             );
-            setProfileExists(true);
+            setProfileExists(true); 
             showSuccessToast('Existing profile loaded!');
           } else {
-            setProfileExists(false); 
-            console.log('Health vitals object found but contains no meaningful data.');
-            showSuccessToast('No existing health profile found. Please create one.');
+            setProfileExists(false);
+            console.log('Health vitals object found but contains no meaningful data. User needs to fill it out.');
           }
         } else {
-          setProfileExists(false); 
-          console.log('No health vitals object found for this user.');
-          showSuccessToast('No existing health profile found. Please create one.');
+          setProfileExists(false);
+          console.log('No health vitals object found for this user. User needs to fill it out.');
         }
       } else {
-        setProfileExists(false);
+        setProfileExists(false); 
         console.log('No user data found or unexpected response from /user/.');
         showErrorToast('Failed to load user data. Please try again.');
       }
@@ -129,112 +126,110 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, []); 
 
   const calculateBMI = () => {
     const h = parseFloat(height) / 100; 
     const w = parseFloat(weight);
     if (!isNaN(h) && !isNaN(w) && h > 0 && w > 0) {
-      return (w / (h * h)).toFixed(2);
+      return (w / (h * h)); 
     }
-    return '--';
+    return 0; 
   };
 
- const handleSubmit = async () => {
-  const newErrors = {
-    bloodGroup: '', genotype: '', age: '', sex: '', height: '',
-    weight: '', activityLevel: '', rhFactor: '',
-  };
-  let currentValid = true;
-
-  if (!bloodGroup || bloodGroup.trim() === '') {
-    newErrors.bloodGroup = 'Blood group is required';
-    currentValid = false;
-  }
-  if (!genotype || genotype.trim() === '') {
-    newErrors.genotype = 'Genotype is required';
-    currentValid = false;
-  }
-
-  if (age.trim() === '' || isNaN(parseInt(age))) {
-    newErrors.age = 'Age is required and must be a number';
-    currentValid = false;
-  }
-
-  if (!sex || sex.trim() === '') {
-    newErrors.sex = 'Sex is required';
-    currentValid = false;
-  }
-
-  if (height.trim() === '' || isNaN(parseFloat(height))) {
-    newErrors.height = 'Height is required and must be a number';
-    currentValid = false;
-  }
-
-  if (weight.trim() === '' || isNaN(parseFloat(weight))) {
-    newErrors.weight = 'Weight is required and must be a number';
-    currentValid = false;
-  }
-
-  if (!activityLevel || activityLevel.trim() === '') {
-    newErrors.activityLevel = 'Activity level is required';
-    currentValid = false;
-  }
-
-  if (!rhFactor || rhFactor.trim() === '') {
-    newErrors.rhFactor = 'Rh factor is required';
-    currentValid = false;
-  }
-
-  setErrors(newErrors);
-
-  if (!currentValid) {
-    showErrorToast('Please fill in all required fields before submitting.');
-    console.log('Validation failed:', newErrors);
-    return;
-  }
-
-  setIsSaving(true);
-
-  try {
-    const requestBody = {
-      blood_group: bloodGroup?.trim(),
-      genotype: genotype?.trim(),
-      activity_level: activityLevel?.toLowerCase(),
-      rh: rhFactor === 'Positive',
-      age: parseInt(age),
-      sex: sex?.toLowerCase(),
-      height: parseFloat(height),
-      weight: parseFloat(weight),
-      known_conditions: knownConditions.trim() || 'none',
-      allergies: allergies.trim() || 'none',
-      family_history: familyHistory.trim() || 'none',
-      food_preferences: foodPreferences.length > 0 ? foodPreferences.join(', ') : 'none',
+  const handleSubmit = async () => {
+    const newErrors = {
+      bloodGroup: '', genotype: '', age: '', sex: '', height: '',
+      weight: '', activityLevel: '', rhFactor: '',
     };
+    let currentValid = true;
 
-    console.log('Sending request body:', requestBody);
-
-    let response;
-    if (profileExists) {
-      response = await apiClient.put('/health/vitals/', requestBody);
-    } else {
-      response = await apiClient.post('/health/vitals/', requestBody);
+    if (!bloodGroup || bloodGroup.trim() === '') {
+      newErrors.bloodGroup = 'Blood group is required';
+      currentValid = false;
+    }
+    if (!genotype || genotype.trim() === '') {
+      newErrors.genotype = 'Genotype is required';
+      currentValid = false;
     }
 
-    if (response.status === 200 || response.status === 201) {
-      showSuccessToast(`Profile ${profileExists ? 'updated' : 'saved'} successfully!`);
-      console.log('API Response:', response.data);
-      setProfileExists(true);
-    } else {
-      showErrorToast(response.data?.message || `Failed to ${profileExists ? 'update' : 'save'} profile.`);
+    const parsedAge = parseInt(age);
+    if (age.trim() === '' || isNaN(parsedAge) || parsedAge < 0) { 
+      newErrors.age = 'Age is required and must be a valid number';
+      currentValid = false;
     }
-  } catch (error: any) {
-    console.error(`Error ${profileExists ? 'updating' : 'saving'} profile:`, error.response?.data || error.message);
-    showErrorToast(error.response?.data?.message || `An error occurred while ${profileExists ? 'updating' : 'saving'} your profile.`);
-  } finally {
-    setIsSaving(false);
-  }
-};
+
+    if (!sex || sex.trim() === '') {
+      newErrors.sex = 'Sex is required';
+      currentValid = false;
+    }
+
+    const parsedHeight = parseFloat(height);
+    if (height.trim() === '' || isNaN(parsedHeight) || parsedHeight <= 0) { 
+      newErrors.height = 'Height is required and must be a valid number (cm)';
+      currentValid = false;
+    }
+
+    const parsedWeight = parseFloat(weight);
+    if (weight.trim() === '' || isNaN(parsedWeight) || parsedWeight <= 0) { 
+      newErrors.weight = 'Weight is required and must be a valid number (kg)';
+      currentValid = false;
+    }
+
+    if (!activityLevel || activityLevel.trim() === '') {
+      newErrors.activityLevel = 'Activity level is required';
+      currentValid = false;
+    }
+
+    if (!rhFactor || rhFactor.trim() === '') {
+      newErrors.rhFactor = 'Rh factor is required';
+      currentValid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (!currentValid) {
+      showErrorToast('Please fill in all required fields before submitting.');
+      console.log('Validation failed:', newErrors);
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const requestBody = {
+         blood_group: bloodGroup?.trim(),
+         genotype: genotype?.trim(),
+         activity_level: activityLevel?.toLowerCase(),
+         rh: rhFactor === 'Positive',
+         age: parseInt(age),
+         sex: sex?.toLowerCase(),
+         height: parseFloat(height),
+         weight: parseFloat(weight),
+         known_conditions: knownConditions.trim() || 'none',
+         allergies: allergies.trim() || 'none',
+         family_history: familyHistory.trim() || 'none',
+         food_preferences: foodPreferences.length > 0 ? foodPreferences.join(', ') : 'none',
+       };
+      // console.log('Sending request body:', requestBody);
+
+      const response = await apiClient.put('/health/vitals/', requestBody);
+
+      if (response.status === 200 || response.status === 201) {
+        showSuccessToast(`Profile ${profileExists ? 'updated' : 'saved'} successfully!`);
+        console.log('API Response:', response.data);
+        // After successful save/update, re-fetch profile to ensure UI is up-to-date
+        await fetchProfile(); 
+      } else {
+        showErrorToast(response.data?.message || `Failed to ${profileExists ? 'update' : 'save'} profile.`);
+      }
+    } catch (error: any) {
+      console.error(`Error ${profileExists ? 'updating' : 'saving'} profile:`, error.response?.data || error.message);
+      showErrorToast(error.response?.data?.message || `An error occurred while ${profileExists ? 'updating' : 'saving'} your profile.`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
 
   return (
@@ -306,7 +301,13 @@ export default function ProfileScreen() {
                 onValueChange={setGenotype}
                 error={errors.genotype}
               />
-              <Input label="Age *" placeholder="e.g., 28" keyboardType="numeric" value={age} onChangeText={setAge} error={errors.age} />
+              <Input 
+                label="Age *" 
+                placeholder="e.g., 28" 
+                keyboardType="numeric"
+                 value={age} 
+                 onChangeText={setAge} 
+                 error={errors.age} />
               <Dropdown
                 label="Sex *"
                 options={sexOptions}
@@ -329,7 +330,7 @@ export default function ProfileScreen() {
                   backgroundColor: '#f9f9f9',
                   alignItems: 'center',
                 }}>
-                  <Text style={{ color: '#000' }}>{calculateBMI()}</Text>
+                  <Text style={{ color: '#000' }}>{calculateBMI().toFixed(2)}</Text>
                 </View>
               </View>
 

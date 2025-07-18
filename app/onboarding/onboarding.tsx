@@ -13,10 +13,14 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Dropdown } from '../reusables/Dropdown';
 import { FileUpload } from '../reusables/FileUpload';
 import { PrimaryButton } from '../reusables/PrimaryButton';
+import apiClient from '@/app/utils/apiClient';
+import { showSuccessToast, showErrorToast } from '@/app/utils/toast';
+import  DocumentPicker from 'expo-document-picker';
 
 interface ConsentCheckboxProps {
   label: string;
@@ -45,7 +49,9 @@ const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({
         />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={onLabelPress || (disableCheckbox ? undefined : onPress)} className="flex-1 ml-3">
+      <TouchableOpacity 
+        onPress={onLabelPress || (disableCheckbox ? undefined : onPress)} 
+         className="flex-1 ml-3">
         <Text className="text-base text-gray-700">{label}</Text>
       </TouchableOpacity>
     </View>
@@ -53,7 +59,6 @@ const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({
   </View>
 );
 
-// Terms and Conditions Modal Component
 interface TermsAndConditionsModalProps {
   visible: boolean;
   onClose: () => void;
@@ -61,10 +66,10 @@ interface TermsAndConditionsModalProps {
 }
 
 const TermsAndConditionsModal: React.FC<TermsAndConditionsModalProps> = ({
-   visible, 
-   onClose, 
-   onAgreeAndClose 
- }) => {
+    visible, 
+    onClose, 
+    onAgreeAndClose 
+  }) => {
   const termsContent = `
 ## Genewise App: Terms and Conditions
 
@@ -133,9 +138,9 @@ export default function OnboardingScreen() {
 
   const [bloodGroup, setBloodGroup] = useState<string | null>(null);
   const [genotype, setGenotype] = useState<string | null>(null);
-  const [dnaFile, setDnaFile] = useState<any>(null);
+  const [dnaFile, setDnaFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null); 
 
- 
+  
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [dnaConsentAgreed, setDnaConsentAgreed] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false); 
@@ -147,21 +152,24 @@ export default function OnboardingScreen() {
     dnaConsent: '', 
   });
 
- 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+
   const handleAgreeToTerms = () => {
     setTermsAgreed(true);
     setShowTermsModal(false);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     let valid = true;
-    const newErrors = {
+    const newErrors = { 
       bloodGroup: '',
       genotype: '',
       termsConsent: '',
       dnaConsent: '',
     };
 
+    // --- Validation ---
     if (!bloodGroup) {
       newErrors.bloodGroup = 'Blood group is required';
       valid = false;
@@ -172,22 +180,91 @@ export default function OnboardingScreen() {
       valid = false;
     }
 
-    // Validate consent checkboxes
     if (!termsAgreed) {
       newErrors.termsConsent = 'You must agree to the terms and conditions';
       valid = false;
     }
 
-    if (!dnaConsentAgreed) {
-      newErrors.dnaConsent = 'You must consent to DNA usage for healthy meals';
+    // DNA consent is only required if a DNA file is actually selected
+    if (dnaFile && !dnaConsentAgreed) {
+      newErrors.dnaConsent = 'You must consent to DNA usage for healthy meals if uploading a file';
       valid = false;
     }
+    
+    // Validate dnaFile properties if a file is selected
+    if (dnaFile && (!dnaFile.uri || !dnaFile.name || !dnaFile.mimeType)) {
+        showErrorToast('Selected DNA file is incomplete or invalid. Please choose another file.');
+        valid = false;
+    }
 
-    setErrors(newErrors);
+    setErrors(newErrors); 
 
-    if (valid) {
-      console.log('Proceeding with:', { bloodGroup, genotype, dnaFile, termsAgreed, dnaConsentAgreed });
-      router.push('/protected/chat/chat');
+    if (!valid) {
+      showErrorToast('Please fill in all required fields and agree to consents.');
+      return; 
+    }
+
+    setIsSubmitting(true); 
+
+    try {
+      const formData = new FormData();
+      
+      const jsonData = {
+        blood_group: bloodGroup,
+        genotype: genotype,
+      };
+      formData.append('data', JSON.stringify(jsonData));
+      if (dnaFile) {
+        let fileUri = dnaFile.uri;
+        if (Platform.OS === 'android' && !fileUri.startsWith('file://')) {
+            fileUri = `file://${fileUri}`;
+        }
+        let fileMimeType = dnaFile.mimeType;
+        const fileExtension = dnaFile.name?.split('.').pop()?.toLowerCase();
+
+        if (fileExtension === 'txt') {
+            fileMimeType = 'text/plain';
+        } else if (fileExtension === 'json') {
+            fileMimeType = 'application/json';
+        } else if (fileExtension === 'vcf') { 
+            fileMimeType = 'text/vcard'; 
+        } else if (fileExtension === 'pdf') {
+            fileMimeType = 'application/pdf';
+        } else if (['jpg', 'jpeg'].includes(fileExtension || '')) {
+            fileMimeType = 'image/jpeg';
+        } else if (fileExtension === 'png') {
+            fileMimeType = 'image/png';
+        } else if (!fileMimeType || fileMimeType === 'application/octet-stream') {
+            fileMimeType = 'application/octet-octet-stream'; 
+        }
+
+        const fileToUpload = {
+          uri: fileUri,
+          name: dnaFile.name,
+          type: fileMimeType,
+        };
+        formData.append('file', fileToUpload as any); 
+      }
+
+      const onboardingResponse = await apiClient.patch('/user/onboarding', formData, {
+        headers: {
+          'Content-Type': undefined, 
+        },
+      });
+
+      if (onboardingResponse.status === 200 || onboardingResponse.status === 201) {
+        showSuccessToast('Onboarding complete! Welcome to Genewise.');
+        console.log('Onboarding API Response:', onboardingResponse.data);
+        router.push('/protected/profile');
+      } else {
+        showErrorToast(onboardingResponse.data?.message || 'Failed to complete onboarding. Unexpected response.');
+      }
+
+    } catch (overallError: any) {
+      console.error('Overall onboarding process error:', overallError.response?.data || overallError.message);
+      showErrorToast(overallError.response?.data?.message || 'An unexpected error occurred during onboarding. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -259,7 +336,12 @@ export default function OnboardingScreen() {
               />
             </View>
 
-            <PrimaryButton title="Continue" onPress={handleContinue} className="mt-6" />
+            <PrimaryButton 
+              title={isSubmitting ? <ActivityIndicator color="#fff" /> : "Continue"} 
+              onPress={handleContinue} 
+              className="mt-6" 
+              disabled={isSubmitting} 
+            />
 
             <TouchableOpacity
               className="items-center justify-center mt-4 mb-6 p-3 rounded-full bg-gray-100 self-start"

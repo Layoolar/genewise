@@ -3,7 +3,7 @@ import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 interface ButtonProps {
-  title: string;
+  title: React.ReactNode; 
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
@@ -47,6 +47,7 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
+          {/* Render title directly, as it can now be a string or a component */}
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
