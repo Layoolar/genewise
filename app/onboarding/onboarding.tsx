@@ -14,13 +14,15 @@ import {
   View,
   Modal,
   ActivityIndicator,
+  TextInput
 } from 'react-native';
 import { Dropdown } from '../reusables/Dropdown';
 import { FileUpload } from '../reusables/FileUpload';
 import { PrimaryButton } from '../reusables/PrimaryButton';
 import apiClient from '@/app/utils/apiClient';
 import { showSuccessToast, showErrorToast } from '@/app/utils/toast';
-import  DocumentPicker from 'expo-document-picker';
+import DocumentPicker from 'expo-document-picker';
+import { useAuth } from '../hooks/useAuth';
 
 interface ConsentCheckboxProps {
   label: string;
@@ -51,7 +53,7 @@ const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({
 
       <TouchableOpacity 
         onPress={onLabelPress || (disableCheckbox ? undefined : onPress)} 
-         className="flex-1 ml-3">
+          className="flex-1 ml-3">
         <Text className="text-base text-gray-700">{label}</Text>
       </TouchableOpacity>
     </View>
@@ -132,15 +134,16 @@ If you have any questions about these Terms and Conditions, please contact us th
 
 export default function OnboardingScreen() {
   const router = useRouter();
-
+  const { updateUser } = useAuth();
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
   const genotypes = ['AA', 'AS', 'SS', 'AC', 'SC'];
 
   const [bloodGroup, setBloodGroup] = useState<string | null>(null);
   const [genotype, setGenotype] = useState<string | null>(null);
   const [dnaFile, setDnaFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null); 
+  const [country, setCountry] = useState('');
+  const [tribe, setTribe] = useState(''); 
 
-  
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [dnaConsentAgreed, setDnaConsentAgreed] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false); 
@@ -180,18 +183,21 @@ export default function OnboardingScreen() {
       valid = false;
     }
 
+    if (!country.trim()) {
+      showErrorToast('Country is required.');
+      valid = false;
+    }
+
     if (!termsAgreed) {
       newErrors.termsConsent = 'You must agree to the terms and conditions';
       valid = false;
     }
 
-    // DNA consent is only required if a DNA file is actually selected
     if (dnaFile && !dnaConsentAgreed) {
       newErrors.dnaConsent = 'You must consent to DNA usage for healthy meals if uploading a file';
       valid = false;
     }
-    
-    // Validate dnaFile properties if a file is selected
+
     if (dnaFile && (!dnaFile.uri || !dnaFile.name || !dnaFile.mimeType)) {
         showErrorToast('Selected DNA file is incomplete or invalid. Please choose another file.');
         valid = false;
@@ -208,64 +214,72 @@ export default function OnboardingScreen() {
 
     try {
       const formData = new FormData();
-      
+
       const jsonData = {
         blood_group: bloodGroup,
         genotype: genotype,
       };
       formData.append('data', JSON.stringify(jsonData));
-      if (dnaFile) {
-        let fileUri = dnaFile.uri;
-        if (Platform.OS === 'android' && !fileUri.startsWith('file://')) {
-            fileUri = `file://${fileUri}`;
-        }
-        let fileMimeType = dnaFile.mimeType;
-        const fileExtension = dnaFile.name?.split('.').pop()?.toLowerCase();
 
-        if (fileExtension === 'txt') {
-            fileMimeType = 'text/plain';
-        } else if (fileExtension === 'json') {
-            fileMimeType = 'application/json';
-        } else if (fileExtension === 'vcf') { 
-            fileMimeType = 'text/vcard'; 
-        } else if (fileExtension === 'pdf') {
-            fileMimeType = 'application/pdf';
-        } else if (['jpg', 'jpeg'].includes(fileExtension || '')) {
-            fileMimeType = 'image/jpeg';
-        } else if (fileExtension === 'png') {
-            fileMimeType = 'image/png';
-        } else if (!fileMimeType || fileMimeType === 'application/octet-stream') {
-            fileMimeType = 'application/octet-octet-stream'; 
-        }
+      const userFormData = {
+        country: country,
+        tribe: tribe, 
+      };
+      formData.append('user', JSON.stringify(userFormData));
 
-        const fileToUpload = {
-          uri: fileUri,
-          name: dnaFile.name,
-          type: fileMimeType,
-        };
-        formData.append('file', fileToUpload as any); 
-      }
+       if (dnaFile?.uri && dnaFile?.name) {
+          let fileUri = dnaFile.uri;
+       if (Platform.OS === 'android' && !fileUri.startsWith('file://')) {
+         fileUri = `file://${fileUri}`;
+       }
+ 
+       let fileMimeType = dnaFile.mimeType || 'application/octet-stream'; 
+       const fileExtension = dnaFile.name?.split('.').pop()?.toLowerCase();
 
-      const onboardingResponse = await apiClient.patch('/user/onboarding', formData, {
-        headers: {
-          'Content-Type': undefined, 
-        },
-      });
+    if (fileExtension === 'txt') {
+        fileMimeType = 'text/plain';
+     } else if (fileExtension === 'json') {
+        fileMimeType = 'application/json';
+     } else if (fileExtension === 'vcf') {
+        fileMimeType = 'text/vcard'; 
+     } else if (fileExtension === 'pdf') {
+        fileMimeType = 'application/pdf';
+    } else if (['jpg', 'jpeg'].includes(fileExtension || '')) {
+        fileMimeType = 'image/jpeg';
+    } else if (fileExtension === 'png') {
+       fileMimeType = 'image/png';
+   }
 
-      if (onboardingResponse.status === 200 || onboardingResponse.status === 201) {
-        showSuccessToast('Onboarding complete! Welcome to Genewise.');
-        console.log('Onboarding API Response:', onboardingResponse.data);
-        router.push('/protected/profile');
-      } else {
-        showErrorToast(onboardingResponse.data?.message || 'Failed to complete onboarding. Unexpected response.');
-      }
+   const fileToUpload = {
+     uri: fileUri,
+     name: dnaFile.name,
+     type: fileMimeType,
+   };
 
-    } catch (overallError: any) {
+    formData.append('file', fileToUpload as any);
+  }
+
+   const onboardingResponse = await apiClient.patch('/user/onboarding', formData, {
+      headers: {
+       'Content-Type': undefined, 
+      },
+   });
+
+   if (onboardingResponse.status === 200 || onboardingResponse.status === 201) {
+     updateUser({ country, tribe });
+
+      showSuccessToast('Onboarding complete! Welcome to Genewise.');
+      router.push('/protected/profile');
+   } else {
+     showErrorToast(onboardingResponse.data?.message || 'Failed to complete onboarding. Unexpected response.');
+   }
+
+   } catch (overallError: any) {
       console.error('Overall onboarding process error:', overallError.response?.data || overallError.message);
       showErrorToast(overallError.response?.data?.message || 'An unexpected error occurred during onboarding. Please try again.');
-    } finally {
+   } finally {
       setIsSubmitting(false);
-    }
+   }
   };
 
   return (
@@ -300,6 +314,24 @@ export default function OnboardingScreen() {
               Fill in the details to complete your profile.
             </Text>
 
+            {/* Country Input (required) */}
+            <TextInput
+              value={country}
+              onChangeText={setCountry}
+              placeholder="Enter your country *"
+              placeholderTextColor="#000"
+              className="border border-gray-300 rounded-lg p-4 mb-4 text-[#000]" 
+            />
+
+            {/* Tribe Input (optional) */}
+            <TextInput
+              value={tribe}
+              onChangeText={setTribe}
+              placeholder="Tribe (optional)"
+              placeholderTextColor="#000" 
+              className="border border-gray-300 rounded-lg p-4 mb-4 text-[#000]" 
+            />
+
             <Dropdown
               label="Blood Group *"
               options={bloodGroups}
@@ -317,6 +349,11 @@ export default function OnboardingScreen() {
             />
 
             <FileUpload label="DNA (Optional)" onFileSelected={setDnaFile} />
+            {!dnaFile && (
+              <Text className="text-sm text-gray-500 italic mt-1 mb-3">
+              You can skip this step if you don’t have a DNA file.
+             </Text>
+            )}
 
             {/* Consent Checkboxes */}
             <View className="mt-6 mb-4">
@@ -328,12 +365,14 @@ export default function OnboardingScreen() {
                 error={errors.termsConsent}
                 disableCheckbox={true} 
               />
-              <ConsentCheckbox
+             {dnaFile && (
+               <ConsentCheckbox
                 label="I agree that genewise can use my DNA to generate healthy meals for me"
                 isChecked={dnaConsentAgreed}
                 onPress={() => setDnaConsentAgreed(!dnaConsentAgreed)}
                 error={errors.dnaConsent}
               />
+             )}
             </View>
 
             <PrimaryButton 

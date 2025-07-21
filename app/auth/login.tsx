@@ -22,77 +22,67 @@ import { loginSchema } from '../utils/validation';
 import { LoginFormValues } from '../types/auth.d';
 import { loginInitialValues } from '../types/formHelpers';
 
-// interface LoginFormValues {
-//   email: string;
-//   password: string;
-// }
-
-// const initialValues: LoginFormValues = {
-//   email: '',
-//   password: '',
-// };
-
 export default function Login() {
   const router = useRouter();
-  const {signIn} = useAuth();
+  const { signIn } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
 
 
- const handleSignIn = async (values: LoginFormValues) => {
-  setLoading(true);
+  const handleSignIn = async (values: LoginFormValues) => {
+    setLoading(true);
 
-  try {
-    const response = await apiClient.post('/auth/login', {
-      email: values.email,
-      password: values.password
-    });
+    try {
+      const response = await apiClient.post('/auth/login', {
+        email: values.email,
+        password: values.password
+      });
 
-    const apiResponse = response.data;
-    const token = apiResponse.data?.access_token;
+      const apiResponse = response.data;
+      const token = apiResponse.data?.access_token;
 
-    if (!token) {
-      throw new Error('No token returned from server');
+      if (!token) {
+        throw new Error('No token returned from server');
+      }
+
+      const user = apiResponse.data.user;
+
+      const userData = {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name, // Correctly map from snake_case to camelCase
+        lastName: user.last_name,   // Correctly map from snake_case to camelCase
+        is_verified: user.is_verified,
+      };
+
+      // Checking if user is verified
+      if (!userData.is_verified) {
+        showErrorToast('Please verify your email before logging in');
+        router.push('/auth/verify');
+        return;
+      }
+
+      await signIn(token, userData);
+      showSuccessToast("Login successful 🎉");
+      router.push('/protected/foods');
+
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'An unknown error occurred';
+
+      console.error('Error during login:', {
+        message: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data,
+        stack: error.stack
+      });
+
+      showErrorToast(errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    const user = apiResponse.data.user;
-
-    const userData = {
-      id: user.id,
-      email: user.email,
-      firstName: user.FirstName,
-      lastName: user.last_name,
-      is_verified: user.is_verified,
-    };
-
-    // Checking if user is verified
-    if (!userData.is_verified) {
-      showErrorToast('Please verify your email before loggin in');
-      router.push('/auth/verify');
-      return;
-    }
-
-    await signIn(token, userData);
-    showSuccessToast("Login successful 🎉");
-    router.push('/protected/foods');
-
-  } catch (error: any) {
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      'An unknown error occurred';
-
-    console.error('Error during login:', {
-      message: error.message,
-      status: error.response?.status,
-      responseData: error.response?.data,
-      stack: error.stack
-    });
-
-    showErrorToast(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -100,8 +90,8 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView 
-          contentContainerStyle={{ flexGrow: 1 }} 
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
           <LinearGradient
@@ -128,57 +118,57 @@ export default function Login() {
             }}
           >
             <Formik
-               initialValues={loginInitialValues}
+              initialValues={loginInitialValues}
               validationSchema={loginSchema}
               onSubmit={handleSignIn}
             >
-              {({ handleChange, handleBlur, handleSubmit, values, errors, touched}) => (
+              {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <>
-              <Input 
-              label="Email"
-              placeholder="joydeo@gmail.com"
-              value={values.email}
-              onChangeText={(text) => {
-                handleChange('email')(text);
-              }}
-              onBlur={() => {
-                handleBlur('email');
-              }}
-              keyboardType="email-address"
-              error={errors.email}
-              touched={touched.email}
-            />
+                  <Input
+                    label="Email"
+                    placeholder="joydeo@gmail.com"
+                    value={values.email}
+                    onChangeText={(text) => {
+                      handleChange('email')(text);
+                    }}
+                    onBlur={() => {
+                      handleBlur('email');
+                    }}
+                    keyboardType="email-address"
+                    error={errors.email}
+                    touched={touched.email}
+                  />
 
-            <Input 
-              label="Password"
-              placeholder="••••••••"
-              value={values.password}
-              onChangeText={handleChange('password')}
-              onBlur={() => handleBlur('password')}
-              secureTextEntry
-              error={errors.password}
-              touched={touched.password}
-            />
+                  <Input
+                    label="Password"
+                    placeholder="••••••••"
+                    value={values.password}
+                    onChangeText={handleChange('password')}
+                    onBlur={() => handleBlur('password')}
+                    secureTextEntry
+                    error={errors.password}
+                    touched={touched.password}
+                  />
 
-            <TouchableOpacity className="self-end mt-3">
-              <Text className="text-gray-700">Forgot password?</Text>
-            </TouchableOpacity>
+                  <TouchableOpacity className="self-end mt-3">
+                    <Text className="text-gray-700">Forgot password?</Text>
+                  </TouchableOpacity>
 
-            <PrimaryButton 
-              title="Sign In" 
-              onPress={handleSubmit} 
-              loading={loading}
-              className="mt-8" />
+                  <PrimaryButton
+                    title="Sign In"
+                    onPress={handleSubmit}
+                    loading={loading}
+                    className="mt-8" />
 
-            <View className="mt-6 mb-6 flex-row justify-center">
-              <Text className="text-gray-500">Don't have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/auth/signup')}>
-                <Text className="text-[#1C5403]">Sign Up</Text>
-              </TouchableOpacity>
-            </View>
+                  <View className="mt-6 mb-6 flex-row justify-center">
+                    <Text className="text-gray-500">Don't have an account? </Text>
+                    <TouchableOpacity onPress={() => router.push('/auth/signup')}>
+                      <Text className="text-[#1C5403]">Sign Up</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               )}
-           </Formik>
+            </Formik>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
