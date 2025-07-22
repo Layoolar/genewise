@@ -1,5 +1,3 @@
-// src/context/AuthContext.tsx
-
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../utils/apiClient';
@@ -106,32 +104,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadAuthData();
   }, []);
 
-  const signIn = async (token: string, user: any) => {
-    try {
-      const processedUser: UserData = {
-        id: user.id || '',
-        email: user.email || '',
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
-        is_verified: !!user.is_verified,
-        country: user.country || '',
-        tribe: user.tribe || '',
-      };
-
-      await setAuthToken(token);
-      await AsyncStorage.setItem('auth_user', JSON.stringify(processedUser));
-      await AsyncStorage.setItem('auth_email', processedUser.email);
-
-      setAuthState({
-        token,
-        user: processedUser,
-        email: processedUser.email,
-        isLoading: false,
-      });
-    } catch (error) {
-      console.error('Failed to save auth data during sign-in', error);
+const signIn = async (token: string, userFromLogin: any) => {
+  try {
+    if (!token || typeof token !== 'string') {
+      throw new Error('Invalid access token');
     }
-  };
+
+    await setAuthToken(token);
+
+    let freshUserData = userFromLogin;
+
+    try {
+      const response = await apiClient.get('/user/');
+      if (response.status === 200 && response.data?.data) {
+        freshUserData = response.data.data;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch latest user data. Falling back to login data.', error);
+    }
+
+    const processedUser: UserData = {
+      id: freshUserData.id || '',
+      email: freshUserData.email || '',
+      first_name: freshUserData.first_name?.trim() || '',
+      last_name: freshUserData.last_name?.trim() || '',
+      is_verified: !!freshUserData.is_verified,
+      country: (freshUserData.country || '').trim(),
+      tribe: (freshUserData.tribe || '').trim(),
+    };
+
+   
+    await AsyncStorage.setItem('auth_user', JSON.stringify(processedUser));
+    await AsyncStorage.setItem('auth_email', processedUser.email);
+
+    setAuthState({
+      token,
+      user: processedUser,
+      email: processedUser.email,
+      isLoading: false,
+    });
+
+    console.log('✅ AuthContext: User signed in with updated data:', processedUser);
+  } catch (error) {
+    console.error('AuthContext: Failed during sign-in:', error);
+    setAuthState({
+      token: null,
+      user: null,
+      email: null,
+      isLoading: false,
+    });
+  }
+};
 
   const setEmail = async (email: string | null) => {
     try {
