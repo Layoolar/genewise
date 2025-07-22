@@ -266,7 +266,10 @@ export default function OnboardingScreen() {
    });
 
    if (onboardingResponse.status === 200 || onboardingResponse.status === 201) {
-     updateUser({ country, tribe });
+       updateUser({
+          country: country.trim(),
+          tribe: tribe.trim(),
+       });
 
       showSuccessToast('Onboarding complete! Welcome to Genewise.');
       router.push('/protected/profile');
