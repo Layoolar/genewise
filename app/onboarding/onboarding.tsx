@@ -137,12 +137,18 @@ export default function OnboardingScreen() {
   const { updateUser } = useAuth();
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
   const genotypes = ['AA', 'AS', 'SS', 'AC', 'SC'];
+  const sexOptions = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+];
 
   const [bloodGroup, setBloodGroup] = useState<string | null>(null);
   const [genotype, setGenotype] = useState<string | null>(null);
   const [dnaFile, setDnaFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null); 
   const [country, setCountry] = useState('');
   const [tribe, setTribe] = useState(''); 
+  const [age, setAge] = useState<string>('');
+  const [sex, setSex] = useState<string>('');
 
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [dnaConsentAgreed, setDnaConsentAgreed] = useState(false);
@@ -151,6 +157,8 @@ export default function OnboardingScreen() {
   const [errors, setErrors] = useState({
     bloodGroup: '',
     genotype: '',
+    age: '',
+    sex: '',
     termsConsent: '', 
     dnaConsent: '', 
   });
@@ -163,127 +171,179 @@ export default function OnboardingScreen() {
     setShowTermsModal(false);
   };
 
-  const handleContinue = async () => {
-    let valid = true;
-    const newErrors = { 
-      bloodGroup: '',
-      genotype: '',
-      termsConsent: '',
-      dnaConsent: '',
-    };
 
-    // --- Validation ---
-    if (!bloodGroup) {
-      newErrors.bloodGroup = 'Blood group is required';
-      valid = false;
-    }
-
-    if (!genotype) {
-      newErrors.genotype = 'Genotype is required';
-      valid = false;
-    }
-
-    if (!country.trim()) {
-      showErrorToast('Country is required.');
-      valid = false;
-    }
-
-    if (!termsAgreed) {
-      newErrors.termsConsent = 'You must agree to the terms and conditions';
-      valid = false;
-    }
-
-    if (dnaFile && !dnaConsentAgreed) {
-      newErrors.dnaConsent = 'You must consent to DNA usage for healthy meals if uploading a file';
-      valid = false;
-    }
-
-    if (dnaFile && (!dnaFile.uri || !dnaFile.name || !dnaFile.mimeType)) {
-        showErrorToast('Selected DNA file is incomplete or invalid. Please choose another file.');
-        valid = false;
-    }
-
-    setErrors(newErrors); 
-
-    if (!valid) {
-      showErrorToast('Please fill in all required fields and agree to consents.');
-      return; 
-    }
-
-    setIsSubmitting(true); 
-
-    try {
-      const formData = new FormData();
-
-      const jsonData = {
-        blood_group: bloodGroup,
-        genotype: genotype,
-      };
-      formData.append('data', JSON.stringify(jsonData));
-
-      const userFormData = {
-        country: country,
-        tribe: tribe, 
-      };
-      formData.append('user', JSON.stringify(userFormData));
-
-       if (dnaFile?.uri && dnaFile?.name) {
-          let fileUri = dnaFile.uri;
-       if (Platform.OS === 'android' && !fileUri.startsWith('file://')) {
-         fileUri = `file://${fileUri}`;
-       }
- 
-       let fileMimeType = dnaFile.mimeType || 'application/octet-stream'; 
-       const fileExtension = dnaFile.name?.split('.').pop()?.toLowerCase();
-
-    if (fileExtension === 'txt') {
-        fileMimeType = 'text/plain';
-     } else if (fileExtension === 'json') {
-        fileMimeType = 'application/json';
-     } else if (fileExtension === 'vcf') {
-        fileMimeType = 'text/vcard'; 
-     } else if (fileExtension === 'pdf') {
-        fileMimeType = 'application/pdf';
-    } else if (['jpg', 'jpeg'].includes(fileExtension || '')) {
-        fileMimeType = 'image/jpeg';
-    } else if (fileExtension === 'png') {
-       fileMimeType = 'image/png';
-   }
-
-   const fileToUpload = {
-     uri: fileUri,
-     name: dnaFile.name,
-     type: fileMimeType,
-   };
-
-    formData.append('file', fileToUpload as any);
+const handleContinue = async () => {
+  if (!apiClient) {
+    console.error('API client is not initialized!');
+    showErrorToast('App configuration error. Please reinstall the app.');
+    return;
   }
 
-   const onboardingResponse = await apiClient.patch('/user/onboarding', formData, {
-      headers: {
-       'Content-Type': undefined, 
-      },
-   });
+  let valid = true;
+  let ageNum: number | null = null; 
+ 
+  const newErrors = {
+    bloodGroup: '',
+    genotype: '',
+    age: '',
+    sex: '',
+    termsConsent: '',
+    dnaConsent: '',
+  };
 
-   if (onboardingResponse.status === 200 || onboardingResponse.status === 201) {
-       updateUser({
+  if (!bloodGroup) {
+    newErrors.bloodGroup = 'Blood group is required';
+    valid = false;
+  }
+  if (!genotype) {
+    newErrors.genotype = 'Genotype is required';
+    valid = false;
+  }
+ 
+  if (age) {
+    ageNum = parseInt(age, 10);
+    if (isNaN(ageNum) || ageNum <= 0) {
+       showErrorToast('Please enter a valid age.');
+      valid = false;
+    }
+  }
+  if (!sex) {
+    showErrorToast('Please select your sex.');
+     valid = false;
+  }
+  if (!country.trim()) {
+    showErrorToast('Country is required.');
+    valid = false;
+  }
+  if (!termsAgreed) {
+    newErrors.termsConsent = 'You must agree to the terms and conditions';
+    valid = false;
+  }
+  if (dnaFile && !dnaConsentAgreed) {
+    newErrors.dnaConsent = 'You must consent to DNA usage for healthy meals if uploading a file';
+    valid = false;
+  }
+  if (dnaFile && (!dnaFile.uri || !dnaFile.name)) {
+    showErrorToast('Selected DNA file is incomplete or invalid. Please choose another file.');
+    valid = false;
+  }
+
+  setErrors(newErrors);
+  if (!valid) {
+    if (country.trim()) { 
+      showErrorToast('Please fill in all required fields and agree to consents.');
+    }
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const formData = new FormData();
+
+
+
+    const jsonData = {
+      blood_group: bloodGroup,
+      genotype: genotype,
+      sex: sex,
+      age: ageNum,
+    };
+    formData.append('data', JSON.stringify(jsonData));
+
+    const userFormData = {
+      country: country.trim(),
+      tribe: tribe.trim(),
+    };
+    formData.append('user', JSON.stringify(userFormData));
+
+
+    if (dnaFile?.uri && dnaFile?.name) {
+      let fileUri = dnaFile.uri;
+      if (Platform.OS === 'android' && !fileUri.startsWith('file://')) {
+        fileUri = `file://${fileUri}`;
+      }
+
+
+      let fileMimeType = 'application/octet-stream'; 
+      const fileExtension = dnaFile.name?.split('.').pop()?.toLowerCase();
+      if (fileExtension === 'txt') {
+        fileMimeType = 'text/plain';
+      } else if (fileExtension === 'json') {
+        fileMimeType = 'application/json';
+      } else if (fileExtension === 'vcf') {
+        fileMimeType = 'text/vcard';
+      } else if (fileExtension === 'pdf') {
+        fileMimeType = 'application/pdf';
+      } else if (['jpg', 'jpeg'].includes(fileExtension || '')) {
+        fileMimeType = 'image/jpeg';
+      } else if (fileExtension === 'png') {
+        fileMimeType = 'image/png';
+      }
+
+      const fileToUpload = {
+        uri: fileUri,
+        name: dnaFile.name,
+        type: fileMimeType,
+      };
+      formData.append('file', fileToUpload as any);
+    }
+
+    console.log("Attempting to call PATCH /user/onboarding");
+    const onboardingResponse = await apiClient.patch('/user/onboarding', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 30000, 
+    });
+    console.log("Received response from PATCH /user/onboarding:", onboardingResponse.status, onboardingResponse.data);
+
+
+    if (onboardingResponse.status === 200 || onboardingResponse.status === 201) {
+      try {
+        await updateUser({
           country: country.trim(),
           tribe: tribe.trim(),
-       });
+        });
+        console.log("AuthContext updated successfully after onboarding.");
+      } catch (updateError: any) {
+        console.error('Error updating AuthContext after onboarding:', updateError);
+      }
 
       showSuccessToast('Onboarding complete! Welcome to Genewise.');
-      router.push('/protected/profile');
-   } else {
-     showErrorToast(onboardingResponse.data?.message || 'Failed to complete onboarding. Unexpected response.');
-   }
+      router.push('/protected/profile'); 
+    } else {
+      const errorMessage = onboardingResponse.data?.message || 'Failed to complete onboarding. Unexpected server response.';
+      console.error('Unexpected success response structure from /user/onboarding:', onboardingResponse);
+      throw new Error(errorMessage);
+    }
+  } catch (error: any) {
+    console.error('Caught error in handleContinue:', error); 
 
-   } catch (overallError: any) {
-      console.error('Overall onboarding process error:', overallError.response?.data || overallError.message);
-      showErrorToast(overallError.response?.data?.message || 'An unexpected error occurred during onboarding. Please try again.');
-   } finally {
-      setIsSubmitting(false);
-   }
-  };
+    let displayMessage = 'An unexpected error occurred during onboarding. Please try again.';
+    if (error.response) {
+      console.error('API Error Response Data:', error.response.data);
+      console.error('API Error Status:', error.response.status);
+      console.error('API Error Headers:', error.response.headers);
+      displayMessage = error.response.data?.message || `Server error (${error.response.status}). Please try again.`;
+    } else if (error.request) {
+      console.error('Network Error - No response received:', error.request);
+      displayMessage = 'Network error. Please check your internet connection and try again.';
+      if (Platform.OS === 'android' && error.message && (error.message.includes('cleartext') || error.message.includes('CLEARTEXT'))) {
+         displayMessage = 'Connection failed (cleartext traffic not permitted). Please contact support or ensure the app is configured for HTTPS.';
+      }
+    } else {
+      console.error('General Error Message:', error.message);
+    }
+    if (!displayMessage || displayMessage === 'An unexpected error occurred during onboarding. Please try again.') {
+        displayMessage = error.message || displayMessage;
+    }
+
+    showErrorToast(displayMessage);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -331,6 +391,28 @@ export default function OnboardingScreen() {
               value={tribe}
               onChangeText={setTribe}
               placeholder="Tribe (optional)"
+              placeholderTextColor="#000" 
+              className="border border-gray-300 rounded-lg p-4 mb-4 text-[#000]" 
+            />
+
+            <Dropdown
+               label="Sex"
+               options={sexOptions.map(opt => opt.label)} 
+               selectedValue={sexOptions.find(opt => opt.value === sex)?.label || ''}
+                onValueChange={(selectedLabel) => {
+                 const selectedOption = sexOptions.find(opt => opt.label === selectedLabel);
+                 if (selectedOption) {
+                  setSex(selectedOption.value);
+                 } else {
+                  setSex(''); 
+                 }
+                }}
+                error={errors.sex} 
+            />
+            <TextInput
+              value={age}
+              onChangeText={setAge}
+              placeholder="Enter your Age"
               placeholderTextColor="#000" 
               className="border border-gray-300 rounded-lg p-4 mb-4 text-[#000]" 
             />

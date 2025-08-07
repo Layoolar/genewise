@@ -70,6 +70,11 @@ export default function Timetable() {
             console.log("Skipping fetchExistingMealPlan: Auth loading or user not available.");
             return;
         }
+        if (!apiClient) {
+          showErrorToast('API client not initialized. Please try again later.');
+          setIsGenerating(false);
+           return;
+         }
 
         setIsGenerating(true);
         setInitialLoadAttempted(true);
@@ -114,6 +119,11 @@ export default function Timetable() {
 
 
     const handleGenerateInitialTimetable = async () => {
+        if (!apiClient) {
+           showErrorToast('API client not initialized. Please try again later.');
+           setIsGenerating(false);
+          return;
+        }
         if (authLoading) {
             showErrorToast("Authenticating.... please wait.");
             return;
@@ -173,6 +183,12 @@ export default function Timetable() {
             return;
         }
 
+        if (!apiClient) {
+        showErrorToast('API client not initialized. Please try again later.');
+         setIsGenerating(false);
+         return;
+        }
+
         setIsGenerating(true);
         setGeneratedMealPlan(null);
 
@@ -214,6 +230,12 @@ export default function Timetable() {
         if (!user || !user.id) {
             showErrorToast("User not logged in. Cannot regenerate meal.");
             return;
+        }
+
+        if (!apiClient) {
+         showErrorToast('API client not initialized. Please try again later.');
+         setIsGenerating(false);
+         return;
         }
         setIsGenerating(true);
 

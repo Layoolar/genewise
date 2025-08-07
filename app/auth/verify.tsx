@@ -38,13 +38,18 @@ const VerifyScreen: React.FC = () => {
        setLoading(true);
 
        try {
+        if (!apiClient) {
+            showErrorToast('API client not initialized. Please try again later.');
+           setLoading(false);
+         return;
+        }
          const response = await apiClient.post('/auth/verify-email', {
             email,
             otp: values.otp
          });
 
          if (response.status === 200) {
-          showSuccessToast('Verificatuion successful 🎉');
+          showSuccessToast('Verification successful 🎉');
           router.push('/onboarding/onboarding');
          }
        } catch (error: any) {
@@ -123,7 +128,7 @@ const VerifyScreen: React.FC = () => {
                      </Text> 
                     )}
 
-                 <PrimaryButton 
+                  <PrimaryButton 
                    title="Verify"
                    onPress={async () => {
                     await handleVerify(values);

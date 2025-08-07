@@ -28,61 +28,75 @@ export default function Login() {
   const [loading, setLoading] = useState<boolean>(false);
 
 
-  const handleSignIn = async (values: LoginFormValues) => {
-    setLoading(true);
+const handleSignIn = async (values: LoginFormValues) => {
+  setLoading(true);
 
-    try {
-      const response = await apiClient.post('/auth/login', {
-        email: values.email,
-        password: values.password
-      });
-
-      const apiResponse = response.data;
-      const token = apiResponse.data?.access_token;
-
-      if (!token) {
-        throw new Error('No token returned from server');
-      }
-
-      const user = apiResponse.data.user;
-
-      const userData = {
-        id: user.id,
-        email: user.email,
-        firstName: user.first_name, // Correctly map from snake_case to camelCase
-        lastName: user.last_name,   // Correctly map from snake_case to camelCase
-        is_verified: user.is_verified,
-      };
-
-      // Checking if user is verified
-      if (!userData.is_verified) {
-        showErrorToast('Please verify your email before logging in');
-        router.push('/auth/verify');
-        return;
-      }
-
-      await signIn(token, userData);
-      showSuccessToast("Login successful 🎉");
-      router.push('/protected/foods');
-
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        'An unknown error occurred';
-
-      console.error('Error during login:', {
-        message: error.message,
-        status: error.response?.status,
-        responseData: error.response?.data,
-        stack: error.stack
-      });
-
-      showErrorToast(errorMessage);
-    } finally {
+  try {
+    if (!apiClient) {
+      showErrorToast('API client not initialized. Please try again later.');
       setLoading(false);
+      return;
     }
-  };
+
+    const response = await apiClient.post('/auth/login', {
+      email: values.email,
+      password: values.password
+    });
+
+    const apiResponse = response.data;
+    const token = apiResponse?.data?.access_token;
+    const user = apiResponse?.data?.user;
+
+    if (!token) {
+      showErrorToast('No token returned from server');
+      setLoading(false);
+      return;
+    }
+
+    if (!user) {
+      showErrorToast('No user data returned from server');
+      setLoading(false);
+      return;
+    }
+
+    const userData = {
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      is_verified: user.is_verified,
+    };
+
+    if (!userData.is_verified) {
+      showErrorToast('Please verify your email before logging in');
+      router.push('/auth/verify');
+      setLoading(false);
+      return;
+    }
+
+    await signIn(token, userData);
+    showSuccessToast("Login successful 🎉");
+    router.push('/protected/foods');
+
+  } catch (error: any) {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      'An unknown error occurred';
+
+    console.error('Error during login:', {
+      message: error.message,
+      status: error.response?.status,
+      responseData: error.response?.data,
+      stack: error.stack
+    });
+
+    showErrorToast(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -148,6 +162,7 @@ export default function Login() {
                     secureTextEntry
                     error={errors.password}
                     touched={touched.password}
+                     inputStyle={{ color: '#222' }}
                   />
 
                   <TouchableOpacity className="self-end mt-3">
@@ -163,7 +178,7 @@ export default function Login() {
                   <View className="mt-6 mb-6 flex-row justify-center">
                     <Text className="text-gray-500">Don't have an account? </Text>
                     <TouchableOpacity onPress={() => router.push('/auth/signup')}>
-                      <Text className="text-[#1C5403]">Sign Up</Text>
+                      <Text style={styles.signUpText}>Sign Up</Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -204,5 +219,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 22,
     marginTop: 4,
+  },
+  signUpText: {
+    color: '#1C5403',
+    fontWeight: '600',
+    fontSize: 16, 
+    textDecorationLine: 'underline',
   },
 });

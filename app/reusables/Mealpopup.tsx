@@ -33,7 +33,7 @@ export const MealPopup: React.FC<MealPopupProps> = ({
           <View style={styles.mealList}>
             {mealItems.map((item, idx) => (
               <View key={idx} style={styles.mealItem}>
-                <Text>{item}</Text>
+                <Text>{item ?? ''}</Text>
               </View>
             ))}
           </View> 

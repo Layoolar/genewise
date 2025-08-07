@@ -16,6 +16,7 @@ interface InputProps {
   error?: string;
   onBlur?: () => void;
   touched?: boolean;
+  inputStyle?: object;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -27,7 +28,8 @@ export const Input: React.FC<InputProps> = ({
   keyboardType = 'default',
   error,
   onBlur,
-  touched = false
+  touched = false,
+  inputStyle 
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -48,6 +50,7 @@ export const Input: React.FC<InputProps> = ({
           keyboardType={keyboardType}
           secureTextEntry={secureTextEntry && !isPasswordVisible}
           onBlur={onBlur}
+          style={inputStyle}
         />
 
         {/* Eye Icon for Password Toggle */}

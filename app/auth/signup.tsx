@@ -1,3 +1,4 @@
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -10,32 +11,36 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { Input } from '../reusables/Input';
 import { PrimaryButton } from '../reusables/PrimaryButton';
 import { signUpSchema } from '../utils/validation';
 import { Formik } from 'formik';
-import { useAuth } from '../hooks/useAuth'; 
+import { useAuth } from '../hooks/useAuth';
 import { showErrorToast, showSuccessToast } from '../utils/toast';
 import apiClient from '../utils/apiClient';
 import { SignUpFormValues } from '../types/auth.d';
 import { signUpInitialValues } from '../types/formHelpers';
 
-
 const SignUp: React.FC = () => {
   const router = useRouter();
-  const { setEmail, setAuthToken } = useAuth(); 
+  const { setEmail, setAuthToken } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleSignUp = async (values: SignUpFormValues) => {
+    if (!apiClient) {
+      showErrorToast('API client not initialized. Please try again later.');
+      setLoading(false); 
+      return;
+    }
     setLoading(true);
     try {
       const response = await apiClient.post('/auth/signup', {
         first_name: values.first_name,
         last_name: values.last_name,
         email: values.email,
-        password: values.password
+        password: values.password,
       });
 
       if (response.status === 200 && response.data && response.data.data) {
@@ -43,9 +48,9 @@ const SignUp: React.FC = () => {
         const accessToken = response.data.data.access_token;
 
         await setEmail(userData.email);
-        
+
         if (accessToken) {
-          await setAuthToken(accessToken); 
+          await setAuthToken(accessToken);
         } else {
           console.warn("Signup successful but no access_token received.");
         }
@@ -55,7 +60,6 @@ const SignUp: React.FC = () => {
       } else {
         showErrorToast(response.data?.message || 'Failed to create account. Unexpected response.');
       }
-
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
@@ -64,22 +68,23 @@ const SignUp: React.FC = () => {
       console.error('Error signing up:', {
         message: error.message,
         response: error.response?.data,
-        stack: error.stack
+        stack: error.stack,
       });
       showErrorToast(errorMessage);
     } finally {
       setLoading(false);
     }
-  }
-  
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.keyboardAvoidingView}
       >
+       
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
           <LinearGradient
@@ -94,91 +99,81 @@ const SignUp: React.FC = () => {
             <Text style={styles.greeting}>Create Your Account</Text>
           </LinearGradient>
 
-          <View style={styles.formContainer}>
+          <View style={styles.formCard}>
             <Formik
-                initialValues={signUpInitialValues}
-                validationSchema={signUpSchema}
-                onSubmit={handleSignUp}
-              >
-                {({ handleChange, handleBlur, handleSubmit, values, errors, touched}) => (
+              initialValues={signUpInitialValues}
+              validationSchema={signUpSchema}
+              onSubmit={handleSignUp}
+            >
+              {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
                 <>
-                <Input
-                  label="First Name "
-                  placeholder="Joy"
-                  value={values.first_name}
-                  onChangeText={(text) => {
-                    handleChange('first_name')(text);
-                  }}
-                  onBlur={() => {
-                    handleBlur('first_name');
-                  }}
-                  error={errors.first_name}
-                  touched={touched.first_name}
-                />
-                 <Input
-                  label="Last Name"
-                  placeholder="Doe"
-                  value={values.last_name}
-                  onChangeText={(text) => {
-                    handleChange('last_name')(text);
-                  }}
-                  onBlur={() => {
-                    handleBlur('last_name');
-                  }}
-                  error={errors.last_name}
-                  touched={touched.last_name}
-                />
-                <Input
-                  label="Email"
-                  placeholder="joydoe@example.com"
-                  value={values.email}
-                  onChangeText={(text) => {
-                    handleChange('email')(text);
-                  }}
-                  onBlur={() => {
-                    handleBlur('email');
-                  }}
-                  keyboardType="email-address"
-                  error={errors.email}
-                  touched={touched.email}
-                />
-                <Input
-                  label="Password"
-                  placeholder="••••••••"
-                  value={values.password}
-                  onChangeText={handleChange('password')}
-                  onBlur={() => handleBlur('password')}
-                  secureTextEntry
-                  error={errors.password}
-                  touched={touched.password}
-                />
-                <Input
-                  label="Confirm Password"
-                  placeholder="••••••••"
-                  value={values.passwordConfirm}
-                  onChangeText={handleChange('passwordConfirm')}
-                  onBlur={() => handleBlur('passwordConfirm')}
-                  secureTextEntry
-                  error={errors.passwordConfirm}
-                  touched={touched.passwordConfirm}
-                />
+                  <Input
+                    label="First Name"
+                    placeholder="Joy"
+                    value={values.first_name}
+                    onChangeText={handleChange('first_name')}
+                    onBlur={() => handleBlur('first_name')}
+                    error={errors.first_name}
+                    touched={touched.first_name}
+                  />
+                  <Input
+                    label="Last Name"
+                    placeholder="Doe"
+                    value={values.last_name}
+                    onChangeText={handleChange('last_name')}
+                    onBlur={() => handleBlur('last_name')}
+                    error={errors.last_name}
+                    touched={touched.last_name}
+                  />
+                  <Input
+                    label="Email"
+                    placeholder="joydoe@example.com"
+                    value={values.email}
+                    onChangeText={handleChange('email')}
+                    onBlur={() => handleBlur('email')}
+                    keyboardType="email-address"
+                    error={errors.email}
+                    touched={touched.email}
+                  />
+                  <Input
+                    label="Password"
+                    placeholder="••••••••"
+                    value={values.password}
+                    onChangeText={handleChange('password')}
+                    onBlur={() => handleBlur('password')}
+                    secureTextEntry
+                    error={errors.password}
+                    touched={touched.password}
+                    inputStyle={{ color: '#222' }}
+                  />
+                  <Input
+                    label="Confirm Password"
+                    placeholder="••••••••"
+                    value={values.passwordConfirm}
+                    onChangeText={handleChange('passwordConfirm')}
+                    onBlur={() => handleBlur('passwordConfirm')}
+                    secureTextEntry
+                    error={errors.passwordConfirm}
+                    touched={touched.passwordConfirm}
+                    inputStyle={{ color: '#222' }}
+                  />
 
-                 <PrimaryButton 
-                title="Sign Up" 
-                 onPress={async () => {
-                 await handleSignUp(values);
-                 }} 
-                loading={loading}
-                 />
+                  <PrimaryButton
+                    title="Sign Up"
+                     onPress={async () => {
+                       await handleSignUp(values);
+                     }} 
+                    loading={loading}
+                  />
 
-                 <View style={styles.bottomText}>
-                  <Text style={{ color: '#6b7280' }}>Already have an account? </Text>
-                  <TouchableOpacity onPress={() => router.push('/auth/login')}>
-                    <Text style={{ color: '#1C5403', fontWeight: '600' }}>Sign In</Text>
-                  </TouchableOpacity>
-                </View>
+                  <View style={styles.bottomTextContainer}>
+                    <Text style={styles.bottomText}>Already have an account? </Text>
+                    <TouchableOpacity onPress={() => router.push('/auth/login')}>
+                      <Text style={styles.signInText}>Sign In</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
-                )}
+              )}
             </Formik>
           </View>
         </ScrollView>
@@ -188,12 +183,24 @@ const SignUp: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff', 
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  
+  scrollContainer: {
+    flexGrow: 1, 
+    justifyContent: 'flex-start', 
+  },
   gradientContainer: {
-    height: '32%',
+    height: 250,
     paddingTop: Platform.OS === 'android' ? 60 : 80,
     paddingHorizontal: 24,
     paddingBottom: 40,
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   logo: {
     width: 80,
@@ -214,11 +221,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
   },
-  formContainer: {
-    flex: 1,
+  formCard: {
+    flexGrow: 1, 
     paddingHorizontal: 24,
     paddingTop: 32,
-    paddingBottom: 48,
+    paddingBottom: 32, 
     backgroundColor: '#fff',
     marginTop: -24,
     borderTopLeftRadius: 32,
@@ -227,11 +234,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 6,
+    minWidth: '100%',
   },
-  bottomText: {
+  signUpButton: {
+    marginTop: 16, 
+  },
+  bottomTextContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    alignItems: 'center', 
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  bottomText: {
+    color: '#6b7280',
+    fontSize: 16,
+  },
+  signInText: {
+    color: '#1C5403',
+    fontWeight: '600',
+    fontSize: 16, 
+    textDecorationLine: 'underline',
   },
 });
 

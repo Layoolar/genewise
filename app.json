@@ -7,16 +7,15 @@
     "icon": "./assets/images/genwiser.png",
     "scheme": "genwise",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.karoprosper.genwise",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.karopeter531.genwise",
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -43,7 +42,6 @@
       "eas": {
         "projectId": "62951c5d-bb0c-4e3b-8e61-f01d2a0e076b" 
       }
-    },
-    "owner": "karopeter531"
+    }
   }
 }

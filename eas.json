@@ -10,6 +10,9 @@
     "preview": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.veloraos.xyz"
       }
     },
     "preview2": {
@@ -18,7 +21,7 @@
       }
     },
     "preview3": {
-     "developmentClient": true
+      "developmentClient": true
     },
     "production": {}
   },

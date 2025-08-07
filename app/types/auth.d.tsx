@@ -22,3 +22,9 @@ export interface UserData {
   last_name: string;
   is_verified: boolean;
 }
+
+export interface ChangePasswordFormValues {
+  currentPassword: string;
+  newPassword: string;
+}
+

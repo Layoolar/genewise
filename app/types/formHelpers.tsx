@@ -1,4 +1,4 @@
-import { SignUpFormValues, LoginFormValues, VerifyFormValues } from "./auth.d";
+import { SignUpFormValues, LoginFormValues, VerifyFormValues, ChangePasswordFormValues } from "./auth.d";
 
 export const signUpInitialValues: SignUpFormValues = {
   first_name: '',
@@ -16,3 +16,8 @@ export const loginInitialValues: LoginFormValues = {
 export const verifyInitialValues: VerifyFormValues = {
   otp: '',
 };
+
+export const changePasswordInitialValues: ChangePasswordFormValues = {
+  currentPassword: '',
+  newPassword: '',
+}

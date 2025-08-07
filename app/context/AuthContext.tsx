@@ -50,10 +50,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (token) {
         await AsyncStorage.setItem('auth_token', token);
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        if (apiClient) {
+         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
       } else {
         await AsyncStorage.removeItem('auth_token');
-        delete apiClient.defaults.headers.common['Authorization'];
+        if (apiClient) {
+          delete apiClient.defaults.headers.common['Authorization'];
+        }
       }
       setAuthState(prev => ({ ...prev, token }));
     } catch (error) {
@@ -79,9 +83,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (token) {
-          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          if (apiClient) {
+            apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          }
         } else {
-          delete apiClient.defaults.headers.common['Authorization'];
+          if (apiClient) {
+             delete apiClient.defaults.headers.common['Authorization'];
+          }
         }
 
         setAuthState({
@@ -115,9 +123,11 @@ const signIn = async (token: string, userFromLogin: any) => {
     let freshUserData = userFromLogin;
 
     try {
-      const response = await apiClient.get('/user/');
-      if (response.status === 200 && response.data?.data) {
+      if (apiClient) {
+        const response = await apiClient.get('/user/');
+       if (response.status === 200 && response.data?.data) {
         freshUserData = response.data.data;
+       }
       }
     } catch (error) {
       console.warn('Failed to fetch latest user data. Falling back to login data.', error);
