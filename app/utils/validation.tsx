@@ -28,3 +28,13 @@ export const otpSchema = Yup.object().shape({
     .length(6, 'OTP must be exactly 6 digits')
     .required('OTP is required'),
 });
+
+export const changePasswordSchema = Yup.object().shape({
+   currentPassword: Yup
+    .string()
+    .required('Current password is required.'),
+  newPassword: Yup
+    .string()
+    .min(6, 'New password must be at least 6 characters.')
+    .required('New password is required.')
+})

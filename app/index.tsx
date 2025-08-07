@@ -45,8 +45,8 @@ export default function SplashScreen() {
         <Image
           source={require('@/assets/images/genwiser.png')}
           style={{
-              height: height * 0.9,
-          width: width * 10,
+          height: height * 0.5,
+          width: width * 0.9,
           resizeMode: 'contain',
           }}
           accessible={true}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useSegments, Slot, Stack } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
@@ -10,21 +10,42 @@ export default function ProtectedLayout() {
   const segments = useSegments();
   const {token, user, isLoading} = useAuth();
 
-  // Show nothing while loading auth state 
+  useEffect(() => {
+    if (!isLoading) {
+       if (!token || !user) {
+        console.log("ProtectedLayout: No token or user, redirecting to login.");
+        router.replace('/auth/login');
+       } else if (!user.is_verified) {
+         console.log("ProtectedLayout: User not verified, redirecting to verify.");
+         router.replace('/auth/verify');
+       }
+    }
+  }, [isLoading, token, user, router]);
+
   if (isLoading) {
-    return <Text>Loading...</Text>
+     return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#1C5403" />
+        <Text className="mt-2 text-gray-600">Loading...</Text>
+      </View>
+     );
   }
 
-  // If not token, redirect to login
+ 
   if (!token || !user) {
-    router.replace('/auth/login');
-    return null;
+     return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Redirecting to login...</Text>
+      </View>
+    );
   }
 
-  // If user exists but not veirfied, redirect to verify screen 
   if (!user.is_verified) {
-    router.replace('/auth/verify');
-    return null;
+     return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Redirecting to verification...</Text>
+      </View>
+    );
   }
 
   const navItems = [
@@ -66,7 +87,7 @@ export default function ProtectedLayout() {
       {/* Bottom Nav Bar */}
       <View className="h-16 flex-row bg-white border-t border-gray-200 shadow-md">
         {navItems.map((item, index) => {
-          const isActive = segments[0] === item.route.split('/').pop(); // e.g., 'dashboard'
+          const isActive = segments[0] === item.route.split('/').pop(); 
 
           return (
             <TouchableOpacity

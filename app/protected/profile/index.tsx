@@ -58,6 +58,11 @@ export default function ProfileScreen() {
 
 
   const fetchProfile = async () => {
+    if (!apiClient) {
+       showErrorToast('API client not initialized. Please try again later.');
+       setIsProfileLoading(false); 
+       return;
+    }
     setIsProfileLoading(true);
     try {
       const userResponse = await apiClient.get('/user/');
@@ -138,6 +143,11 @@ export default function ProfileScreen() {
   };
 
   const handleSubmit = async () => {
+     if (!apiClient) {
+       showErrorToast('API client not initialized. Please try again later.');
+       setIsSaving(false);
+       return;
+    }
     const newErrors = {
       bloodGroup: '', genotype: '', age: '', sex: '', height: '',
       weight: '', activityLevel: '', rhFactor: '',

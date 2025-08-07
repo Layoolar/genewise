@@ -14,6 +14,7 @@ const RootLayout = () => {
           <Stack.Screen name="auth/verify" options={{ headerShown: false }} />
           <Stack.Screen name="onboarding/onboarding" options={{ headerShown: false }} />
           <Stack.Screen name="protected/foods" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/change-password" options={{ headerShown: false }} />
         </Stack>
         <Toast />
     </AuthProvider>

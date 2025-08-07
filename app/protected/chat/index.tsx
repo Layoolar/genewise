@@ -33,6 +33,7 @@ export default function ChatScreen() {
 
   const flatListRef = useRef<FlatList<Message>>(null);
   const router = useRouter();
+   const abortControllerRef = useRef<AbortController | null>(null); 
 
   const scrollToBottom = () => {
     flatListRef.current?.scrollToEnd({ animated: true });
@@ -52,10 +53,15 @@ export default function ChatScreen() {
     setIsSending(true);
 
     const aiPlaceholderId = Date.now() + 1;
-    setMessages((prev) => [
-      ...prev,
-      { id: aiPlaceholderId, text: '', isUser: false, loading: true },
-    ]);
+      const aiPlaceholderMessage: Message = {
+      id: aiPlaceholderId,
+      text: '',
+      isUser: false,
+      loading: true, 
+    };
+     setMessages((prev) => [...prev, aiPlaceholderMessage]);
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
     setIsAITyping(true);
     setTimeout(scrollToBottom, 100);
 
@@ -72,6 +78,7 @@ export default function ChatScreen() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ message: userMessage.text }),
+        signal
       });
 
       if (!response.ok) {
@@ -86,9 +93,12 @@ export default function ChatScreen() {
         throw new Error(errorMessage);
       }
 
+      const contentType = response.headers.get('Content-Type') || '';
+      const isSSE = contentType.includes('text/event-stream');
+
       const rawText = await response.text();
 
-      // Simulate streaming
+
       const simulatedChunks = rawText
         .split('\n')
         .filter((line) => line.trim().startsWith('data:'))
@@ -108,7 +118,7 @@ export default function ChatScreen() {
           );
           chunkIndex++;
           scrollToBottom();
-          setTimeout(typeNextChunk, 100); // Simulated delay
+          //setTimeout(typeNextChunk, 100);
         } else {
           setIsAITyping(false);
           setIsSending(false);

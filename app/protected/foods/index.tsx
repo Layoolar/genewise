@@ -47,6 +47,12 @@ export default function FoodsScreen() {
   const [calendlyUrl, setCalendlyUrl] = useState('');
 
   const fetchFoods = async () => {
+    if  (!apiClient) {
+    showErrorToast('API client not initialized. Please try again later.');
+    setFoods([]);
+    setIsLoading(false);
+    return;
+    }
     setIsLoading(true); 
     try {
       const response = await apiClient.get('/foods/'); 
