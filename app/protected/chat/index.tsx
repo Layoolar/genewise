@@ -90,9 +90,8 @@ export default function ChatScreen() {
 
       // Simulate streaming
       const simulatedChunks = rawText
-        .split('\n')
-        .filter((line) => line.trim().startsWith('data:'))
-        .map((line) => line.replace(/^data:\s*/, ''));
+        .split('\n\n')
+        .map((line) => line.replace(/^data:\s?/gm, ""));
 
       let chunkIndex = 0;
 
@@ -102,7 +101,7 @@ export default function ChatScreen() {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === aiPlaceholderId
-                ? { ...msg, text: msg.text + chunk + ' ', loading: false }
+                ? { ...msg, text: msg.text + chunk, loading: false }
                 : msg
             )
           );
