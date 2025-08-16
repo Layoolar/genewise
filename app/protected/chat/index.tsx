@@ -91,7 +91,7 @@ export default function ChatScreen() {
       // Simulate streaming
       const simulatedChunks = rawText
         .split('\n\n')
-        .map((line) => line.replace(/^data:\s?/gm, ""));
+        .map((line) => line.replace(/^data:\s?/m, ""));
 
       let chunkIndex = 0;
 
