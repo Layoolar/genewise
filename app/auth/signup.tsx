@@ -1,13 +1,261 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Input } from '../reusables/Input';
+import { PrimaryButton } from '../reusables/PrimaryButton';
+import { signUpSchema } from '../utils/validation';
+import { Formik } from 'formik';
+import { useAuth } from '../hooks/useAuth';
+import { showErrorToast, showSuccessToast } from '../utils/toast';
+import apiClient from '../utils/apiClient';
+import { SignUpFormValues } from '../types/auth.d';
+import { signUpInitialValues } from '../types/formHelpers';
 
 const SignUp: React.FC = () => {
-    return (
-      <View>
-        <Text>Sign up screen</Text>
-      </View>
-    );
-}
+  const router = useRouter();
+  const { setEmail, setAuthToken } = useAuth();
+  const [loading, setLoading] = useState<boolean>(false);
 
+  const handleSignUp = async (values: SignUpFormValues) => {
+    if (!apiClient) {
+      showErrorToast('API client not initialized. Please try again later.');
+      setLoading(false); 
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await apiClient.post('/auth/signup', {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        email: values.email,
+        password: values.password,
+      });
+
+      if (response.status === 200 && response.data && response.data.data) {
+        const userData = response.data.data.user;
+        const accessToken = response.data.data.access_token;
+
+        await setEmail(userData.email);
+
+        if (accessToken) {
+          await setAuthToken(accessToken);
+        } else {
+          console.warn("Signup successful but no access_token received.");
+        }
+
+        showSuccessToast("Account created successfully 🎉");
+        router.push('/auth/verify');
+      } else {
+        showErrorToast(response.data?.message || 'Failed to create account. Unexpected response.');
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'An unknown error occurred';
+      console.error('Error signing up:', {
+        message: error.message,
+        response: error.response?.data,
+        stack: error.stack,
+      });
+      showErrorToast(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+       
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <LinearGradient
+            colors={['#1C5403', '#020d00']}
+            style={styles.gradientContainer}
+          >
+            <Image
+              source={require('../../assets/images/genewiser1.png')}
+              style={styles.logo}
+            />
+            <Text style={styles.heading}>Welcome 👋</Text>
+            <Text style={styles.greeting}>Create Your Account</Text>
+          </LinearGradient>
+
+          <View style={styles.formCard}>
+            <Formik
+              initialValues={signUpInitialValues}
+              validationSchema={signUpSchema}
+              onSubmit={handleSignUp}
+            >
+              {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
+                <>
+                  <Input
+                    label="First Name"
+                    placeholder="Joy"
+                    value={values.first_name}
+                    onChangeText={handleChange('first_name')}
+                    onBlur={() => handleBlur('first_name')}
+                    error={errors.first_name}
+                    touched={touched.first_name}
+                  />
+                  <Input
+                    label="Last Name"
+                    placeholder="Doe"
+                    value={values.last_name}
+                    onChangeText={handleChange('last_name')}
+                    onBlur={() => handleBlur('last_name')}
+                    error={errors.last_name}
+                    touched={touched.last_name}
+                  />
+                  <Input
+                    label="Email"
+                    placeholder="joydoe@example.com"
+                    value={values.email}
+                    onChangeText={handleChange('email')}
+                    onBlur={() => handleBlur('email')}
+                    keyboardType="email-address"
+                    error={errors.email}
+                    touched={touched.email}
+                  />
+                  <Input
+                    label="Password"
+                    placeholder="••••••••"
+                    value={values.password}
+                    onChangeText={handleChange('password')}
+                    onBlur={() => handleBlur('password')}
+                    secureTextEntry
+                    error={errors.password}
+                    touched={touched.password}
+                    inputStyle={{ color: '#222' }}
+                  />
+                  <Input
+                    label="Confirm Password"
+                    placeholder="••••••••"
+                    value={values.passwordConfirm}
+                    onChangeText={handleChange('passwordConfirm')}
+                    onBlur={() => handleBlur('passwordConfirm')}
+                    secureTextEntry
+                    error={errors.passwordConfirm}
+                    touched={touched.passwordConfirm}
+                    inputStyle={{ color: '#222' }}
+                  />
+
+                  <PrimaryButton
+                    title="Sign Up"
+                     onPress={async () => {
+                       await handleSignUp(values);
+                     }} 
+                    loading={loading}
+                  />
+
+                  <View style={styles.bottomTextContainer}>
+                    <Text style={styles.bottomText}>Already have an account? </Text>
+                    <TouchableOpacity onPress={() => router.push('/auth/login')}>
+                      <Text style={styles.signInText}>Sign In</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </Formik>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff', 
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  
+  scrollContainer: {
+    flexGrow: 1, 
+    justifyContent: 'flex-start', 
+  },
+  gradientContainer: {
+    height: 250,
+    paddingTop: Platform.OS === 'android' ? 60 : 80,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    position: 'absolute',
+    top: Platform.OS === 'android' ? 48 : 64,
+    right: 24,
+    resizeMode: 'contain',
+  },
+  greeting: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '400',
+    marginBottom: 4,
+  },
+  heading: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  formCard: {
+    flexGrow: 1, 
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 32, 
+    backgroundColor: '#fff',
+    marginTop: -24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+    minWidth: '100%',
+  },
+  signUpButton: {
+    marginTop: 16, 
+  },
+  bottomTextContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center', 
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  bottomText: {
+    color: '#6b7280',
+    fontSize: 16,
+  },
+  signInText: {
+    color: '#1C5403',
+    fontWeight: '600',
+    fontSize: 16, 
+    textDecorationLine: 'underline',
+  },
+});
 
 export default SignUp;

@@ -1,0 +1,40 @@
+import * as Yup from 'yup';
+
+export const signUpSchema = Yup.object().shape({
+    firstName: Yup.string().required('First name is required'),
+  lastName: Yup.string().required('Last name is required'),
+  email: Yup.string()
+    .email('Enter a valid email')
+    .required('Email is required'),
+  password: Yup.string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password')], 'Passwords must match')
+    .required('Confirm password is required'),
+});
+
+export const loginSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('Invalid email')
+    .required('Email is required'),
+  password: Yup.string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
+});
+
+export const otpSchema = Yup.object().shape({
+  otp: Yup.string()
+    .length(6, 'OTP must be exactly 6 digits')
+    .required('OTP is required'),
+});
+
+export const changePasswordSchema = Yup.object().shape({
+   currentPassword: Yup
+    .string()
+    .required('Current password is required.'),
+  newPassword: Yup
+    .string()
+    .min(6, 'New password must be at least 6 characters.')
+    .required('New password is required.')
+})
